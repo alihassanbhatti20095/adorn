@@ -1,0 +1,19 @@
+html,body{margin:0;height:100%;background:#fff;color:#2B2D2F;font-family:Roboto,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+*{box-sizing:border-box}
+a{color:#8C6A36}a:hover{color:#A68049}
+:focus-visible{outline:2px solid #B8925A;outline-offset:2px}
+button{font-family:inherit}
+@keyframes adornShimmer{from{background-position:160% 0}to{background-position:-60% 0}}
+.hv-gold:hover:not(:disabled){border-color:#B8925A !important}
+.hv-bggold:hover:not(:disabled){background:#A68049 !important}
+.hv-tint:hover:not(:disabled){background:#F2E8D8 !important}
+.hv-grey:hover:not(:disabled){background:#DCDEE0 !important}
+.hv-dark:hover:not(:disabled){background:#2B2D2F !important}
+.hv-text:hover{color:#2B2D2F !important}
+#adorn-print{display:none}
+@media print{
+  @page{size:A4;margin:12mm}
+  html,body{height:auto}
+  #adorn-app{display:none !important}
+  #adorn-print{display:block !important}
+}
