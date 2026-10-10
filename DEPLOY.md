@@ -45,7 +45,11 @@ The service lives in `/opt/adorn/server`, listens only on `127.0.0.1:4100` (port
 cd /opt/adorn && git pull origin main
 cd server && npm ci --omit=dev
 cp .env.example .env && chmod 600 .env
-nano .env        # ENQUIRY_TO, MAIL_FROM, SMTP_HOST/PORT/USER/PASS (MAIL_MODE=smtp)
+nano .env        # values below. SMTP_PASS is a Google App Password: NEVER commit .env or paste it in the repo
+#   MAIL_MODE=smtp  SMTP_HOST=smtp.gmail.com  SMTP_PORT=587  SMTP_SECURE=false
+#   SMTP_USER=dean@aluglass.co.uk  SMTP_PASS=<app password, no spaces>
+#   MAIL_FROM="Adorn Configurator <dean@aluglass.co.uk>"   (must match SMTP_USER; Gmail rewrites other senders)
+#   ENQUIRY_TO=dean@aluglass.co.uk   SEND_CONFIRMATION=true (customer gets an automatic confirmation)
 ```
 **2. Start under pm2**
 ```bash
@@ -74,6 +78,6 @@ Save, then test: `curl -s https://configurator.adorngroup.co.uk/api/health`.
 
 ## Still to do before real use
 
-- Fill in SMTP details (not known to me) and the real `ENQUIRY_TO` address.
+- Confirm `ENQUIRY_TO` is the right inbox (currently dean@aluglass.co.uk). If the Google App Password is ever revoked, create a new one and update `.env`, then `pm2 restart adorn-enquiry`.
 - Footer "Data protection" and "Legal Notice" links are still `#`.
 - `npm audit` reports 1 moderate and 1 high in dev tooling; do not run `npm audit fix --force`.

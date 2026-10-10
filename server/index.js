@@ -26,6 +26,7 @@ export const config = {
   mailMode: env.MAIL_MODE || 'smtp',
   dataFile: path.resolve(here, env.DATA_FILE || 'data/enquiries.jsonl'),
   rateLimit: +env.RATE_LIMIT_PER_HOUR || 5,
+  confirm: env.SEND_CONFIRMATION !== 'false',
   smtp: { host: env.SMTP_HOST, port: +env.SMTP_PORT || 587, secure: env.SMTP_SECURE === 'true', user: env.SMTP_USER, pass: env.SMTP_PASS },
 };
 
@@ -121,6 +122,33 @@ async function sendMail(rec) {
   if (config.mailMode === 'log') console.log('--- MAIL (log mode) ---\n' + info.message.toString() + '\n-----------------------');
 }
 
+// Automatic acknowledgement to the customer. Best effort: a failure here never fails the enquiry.
+export function confirmationBody(rec) {
+  const rows = rec.summary.map((r) => `${r.label}: ${r.value}`).join('\n');
+  const text = [
+    `Hello ${rec.name},`, '',
+    'Thank you for your enquiry. We have received your door configuration and will be in touch shortly.', '',
+    `Your reference: ${rec.id}`, '', 'Your configuration:', rows || '-', '',
+    'You can reload this exact door any time under Save / load with this reference code:', rec.reference, '',
+    'Reply to this email if you would like to add anything.',
+  ].join('\n');
+  const tr = (a, b) => `<tr><td style="padding:4px 12px 4px 0;color:#5F6265;vertical-align:top">${esc(a)}</td><td style="padding:4px 0">${esc(b)}</td></tr>`;
+  const html = `<div style="font-family:Arial,sans-serif;color:#2B2D2F;font-size:14px;line-height:1.5">
+<p>Hello ${esc(rec.name)},</p>
+<p>Thank you for your enquiry. We have received your door configuration and will be in touch shortly.</p>
+<p>Your reference: <strong>${esc(rec.id)}</strong></p>
+<h3 style="margin:16px 0 6px">Your configuration</h3><table>${rec.summary.map((r) => tr(r.label, r.value)).join('')}</table>
+<p style="color:#5F6265;font-size:12px">Reload this exact door under Save / load with this reference code:<br><code style="word-break:break-all">${esc(rec.reference)}</code></p>
+<p>Reply to this email if you would like to add anything.</p></div>`;
+  return { text, html };
+}
+
+async function sendConfirmation(rec) {
+  const { text, html } = confirmationBody(rec);
+  const info = await mailer().sendMail({ from: config.from, to: rec.email, replyTo: config.to.length ? config.to[0] : undefined, subject: `We received your enquiry ${rec.id}`, text, html });
+  if (config.mailMode === 'log') console.log('--- CONFIRMATION (log mode) ---\n' + info.message.toString() + '\n-----------------------');
+}
+
 /* ---------- http ---------- */
 function send(res, code, body) {
   res.writeHead(code, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' });
@@ -169,6 +197,7 @@ export async function handle(req, res) {
   try {
     await sendMail(rec);
     store({ id: rec.id, mailed: true, update: true });
+    if (config.confirm) await sendConfirmation(rec).catch((e) => console.error('confirmation failed', rec.id, e.message));
   } catch (e) {
     console.error('mail failed', rec.id, e.message);
     return send(res, 502, { error: 'We could not send your enquiry. Please try again.' });
