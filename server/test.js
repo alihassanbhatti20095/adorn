@@ -37,7 +37,9 @@ const ok = await r.json();
 check('valid enquiry 200 with id', r.status === 200 && /^ENQ-[0-9A-F]{8}$/.test(ok.id));
 const mail = out.replace(/=\r?\n/g, '').replace(/=([0-9A-F]{2})/g, (_, h) => String.fromCharCode(parseInt(h, 16)));
 check('email logged and HTML-escaped', mail.includes('Jane &lt;b&gt;Doe&lt;/b&gt;') && !mail.includes('>Jane <b>') && mail.includes('RAL 7016') && mail.includes('Reply-To') && mail.includes('jane@example.com'));
+const copy = mail.slice(mail.indexOf('CONFIRMATION'));
 check('confirmation sent to customer', out.includes('CONFIRMATION') && out.includes('To: jane@example.com') && mail.includes('We received your enquiry'));
+check('customer copy includes their details, message and configuration', ['+44 20 7946 0958', 'SW1A 1AA', 'Main showroom', 'Your message', 'Hello', 'RAL 7016', 'Jane &lt;b&gt;Doe&lt;/b&gt;'].every((t) => copy.includes(t)));
 const lines = fs.readFileSync(dataFile, 'utf8').trim().split('\n').map((l) => JSON.parse(l));
 check('stored then marked mailed', lines.length === 2 && lines[0].email === 'jane@example.com' && lines[1].mailed === true);
 

@@ -128,7 +128,10 @@ export function confirmationBody(rec) {
   const text = [
     `Hello ${rec.name},`, '',
     'Thank you for your enquiry. We have received your door configuration and will be in touch shortly.', '',
-    `Your reference: ${rec.id}`, '', 'Your configuration:', rows || '-', '',
+    `Your reference: ${rec.id}`, '',
+    'A copy of your enquiry:', `Name: ${rec.name}`, `Email: ${rec.email}`, `Phone: ${rec.phone || '-'}`, `Postcode: ${rec.postcode}`, `Showroom: ${rec.showroom}`, '',
+    'Your message:', rec.message || '-', '',
+    'Your configuration:', rows || '-', '',
     'You can reload this exact door any time under Save / load with this reference code:', rec.reference, '',
     'Reply to this email if you would like to add anything.',
   ].join('\n');
@@ -137,6 +140,8 @@ export function confirmationBody(rec) {
 <p>Hello ${esc(rec.name)},</p>
 <p>Thank you for your enquiry. We have received your door configuration and will be in touch shortly.</p>
 <p>Your reference: <strong>${esc(rec.id)}</strong></p>
+<h3 style="margin:16px 0 6px">A copy of your enquiry</h3><table>${tr('Name', rec.name)}${tr('Email', rec.email)}${tr('Phone', rec.phone || '-')}${tr('Postcode', rec.postcode)}${tr('Showroom', rec.showroom)}</table>
+<h3 style="margin:16px 0 6px">Your message</h3><p style="white-space:pre-wrap;margin:0">${esc(rec.message || '-')}</p>
 <h3 style="margin:16px 0 6px">Your configuration</h3><table>${rec.summary.map((r) => tr(r.label, r.value)).join('')}</table>
 <p style="color:#5F6265;font-size:12px">Reload this exact door under Save / load with this reference code:<br><code style="word-break:break-all">${esc(rec.reference)}</code></p>
 <p>Reply to this email if you would like to add anything.</p></div>`;
