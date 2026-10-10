@@ -83,7 +83,7 @@ export const useStore = create((set, get) => ({
   cfg: initialCfg(), step: hashStep() || 'model', panelOpen: true, sheetTall: false, modelFilter: 'all', view: 'outside', zoom: 1,
   colourTab: 'outside', ralQ: '', searchQ: '', sysOpen: {}, acc: { handles: true, inside: false }, lockOpen: {},
   modal: null, refCode: '', loadInput: '', loadError: '', toast: '',
-  enq: { name: '', email: '', phone: '', postcode: '', message: '', showroom: 'No preference', consent: false }, enqErr: {}, enqStatus: 'idle',
+  enq: { name: '', email: '', phone: '', postcode: '', message: '', showroom: 'No preference', consent: false, website: '' }, enqErr: {}, enqStatus: 'idle', enqMsg: '',
   cookie: initialCookie(), ckA: false, ckM: false, lang: LS.get('adorn.lang') || 'en',
   rendering: false, house: null, ...viewport(),
   stageW: 900, stageH: 700, printing: false, dropHover: false, stageEl: null, ovEl: null, fileEl: null,
@@ -155,11 +155,11 @@ export const useStore = create((set, get) => ({
     if (!q.consent) err.consent = 'Please accept to continue';
     set({ enqErr: err });
     if (Object.keys(err).length) return;
-    set({ enqStatus: 'sending' });
+    set({ enqStatus: 'sending', enqMsg: '' });
     const cfg = get().cfg;
-    postEnquiry(Object.assign({}, q, { config: cfg, reference: enc(cfg) }))
+    import('./steps/Tools').then(({ summary }) => postEnquiry(Object.assign({}, q, { config: cfg, reference: enc(cfg), summary: summary(cfg).map((r) => ({ label: r.label, value: r.value })) })))
       .then(() => set((s) => ({ enqStatus: 'sent', enq: Object.assign({}, s.enq, { message: '' }) })))
-      .catch(() => set({ enqStatus: 'error' }));
+      .catch((e) => set({ enqStatus: 'error', enqErr: (e && e.fields) || {}, enqMsg: e && (e.status === 502 || (e.status >= 400 && e.status < 500)) ? e.message : '' }));
   },
 
   doPrint: () => {

@@ -59,7 +59,7 @@ function CookieModal() {
 }
 
 function EnquiryModal() {
-  const { closeModal, enq, enqErr, enqStatus, cfg, patch, submitEnq } = useStore();
+  const { closeModal, enq, enqErr, enqStatus, enqMsg, cfg, patch, submitEnq } = useStore();
   const code = `${cfg.model} ${cfg.variant}`;
   const set = (id) => (e) => patch({ enq: { ...useStore.getState().enq, [id]: e.target.value }, enqErr: { ...useStore.getState().enqErr, [id]: undefined } });
   const fields = [['name', 'Full name', 'text', 'name'], ['email', 'Email', 'email', 'email'], ['phone', 'Phone (optional)', 'tel', 'tel'], ['postcode', 'Postcode', 'text', 'postal-code']];
@@ -90,6 +90,7 @@ function EnquiryModal() {
                 </label>
               ))}
             </div>
+            <input type="text" name="website" tabIndex={-1} autoComplete="off" aria-hidden="true" value={enq.website} onChange={set('website')} style={{ position: 'absolute', left: -9999, width: 1, height: 1, opacity: 0 }} />
             <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               <span style={{ fontSize: 14, fontWeight: 500 }}>Preferred showroom</span>
               <select value={enq.showroom} onChange={set('showroom')} style={{ height: 44, border: '1px solid #C4C6C8', borderRadius: 4, padding: '0 10px', font: 'inherit', fontSize: 14, background: '#fff', color: TX }}>
@@ -105,7 +106,7 @@ function EnquiryModal() {
               <span>I agree that Adorn Group Ltd may store my details to respond to this enquiry, as described in the <a href="#">data protection notice</a>.</span>
             </label>
             {enqErr.consent && <span role="alert" style={{ fontSize: 12, color: ERR, marginTop: -8 }}>{enqErr.consent}</span>}
-            {enqStatus === 'error' && <span role="alert" style={{ fontSize: 14, color: ERR }}>Something went wrong sending your enquiry. Please try again.</span>}
+            {enqStatus === 'error' && <span role="alert" style={{ fontSize: 14, color: ERR }}>{enqMsg || 'Something went wrong sending your enquiry. Please try again.'}</span>}
             <button type="submit" disabled={enqStatus === 'sending'} className="hv-bggold" style={{ height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, border: 0, borderRadius: 4, background: G, color: '#fff', font: 'inherit', fontSize: 16, fontWeight: 500, cursor: 'pointer' }}>
               {enqStatus === 'sending' ? 'Sending…' : 'Send enquiry'}
             </button>

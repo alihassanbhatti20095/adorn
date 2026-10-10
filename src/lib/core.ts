@@ -58,9 +58,14 @@ export function drawTri(ctx, img, s, d) {
   const m00 = (u1 - u0) * i00 + (u2 - u0) * i10, m01 = (u1 - u0) * i01 + (u2 - u0) * i11, m10 = (v1 - v0) * i00 + (v2 - v0) * i10, m11 = (v1 - v0) * i01 + (v2 - v0) * i11;
   ctx.setTransform(m00, m10, m01, m11, u0 - m00 * x0 - m01 * y0, v0 - m10 * x0 - m11 * y0); ctx.drawImage(img, 0, 0); ctx.restore();
 }
-// Stub for POST /api/enquiry — set (window as any).ADORN_API_ENDPOINT = '/api/enquiry' to hit a real backend.
+// POST the enquiry to the backend (server/). Same-origin /api/enquiry by default; override with window.ADORN_API_ENDPOINT.
+// Throws an Error with .status and (for validation failures) .fields so the UI can show the server's messages.
 export function postEnquiry(payload) {
-  if ((window as any).ADORN_API_ENDPOINT) return fetch((window as any).ADORN_API_ENDPOINT, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }).then(r => { if (!r.ok) throw new Error(r.status); });
-  return new Promise(r => setTimeout(r, 1100));
+  const url = (window as any).ADORN_API_ENDPOINT || '/api/enquiry';
+  return fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }).then(async (r) => {
+    if (r.ok) return;
+    let body = {};
+    try { body = await r.json(); } catch { /* non-JSON error page */ }
+    throw Object.assign(new Error(body.error || 'Request failed'), { status: r.status, fields: body.fields });
+  });
 }
-
