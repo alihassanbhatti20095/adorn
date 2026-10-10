@@ -23,7 +23,7 @@ function ModelCard({ code, sel, onPick }) {
 export function Reset() {
   const patch = useStore((s) => s.patch);
   return (
-    <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16, alignItems: 'flex-start' }}>
+    <div style={{ padding: 'var(--pp)', display: 'flex', flexDirection: 'column', gap: 16, alignItems: 'flex-start' }}>
       <p style={{ margin: 0, lineHeight: 1.5 }}>Discard every choice and start again from the default door: AL1 88E A, single door, 1100 x 2100 mm.</p>
       <button onClick={() => patch({ modal: 'reset' })} className="hv-bggold" style={{ height: 44, padding: '0 20px', border: 0, borderRadius: 4, background: G, color: '#fff', font: 'inherit', fontWeight: 500, cursor: 'pointer' }}>Reset configuration</button>
     </div>
@@ -35,7 +35,7 @@ export function Search() {
   const q = searchQ.trim().toLowerCase().replace(/\s+/g, '');
   const res = q.length >= 2 ? D.MODELS.filter((m) => m.code.toLowerCase().replace(/\s+/g, '').includes(q)) : [];
   return (
-    <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
+    <div style={{ padding: 'var(--pp)', display: 'flex', flexDirection: 'column', gap: 16 }}>
       <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         <span style={{ fontSize: 14, fontWeight: 500 }}>Search model</span>
         <span style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
@@ -57,7 +57,7 @@ export function TypeStep() {
   const { cfg, setCfg } = useStore();
   const R = D.RULES.models[cfg.model];
   return (
-    <div style={{ padding: 24, display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0,1fr))', gap: 12 }}>
+    <div style={{ padding: 'var(--pp)', display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0,1fr))', gap: 12 }}>
       {D.TYPES.map((t) => {
         const ok = R.types.includes(t.id), sel = t.id === cfg.type;
         return (
@@ -74,19 +74,35 @@ export function TypeStep() {
   );
 }
 
+const ORNAMENT = ['grid', 'porthole', 'window', 'steps'];
+const FILTERS = [['all', 'All', () => true], ['glass', 'Glass', (m) => m.glass], ['solid', 'Solid', (m) => !m.glass], ['ornament', 'Ornament', (m) => m.glass && ORNAMENT.includes(m.pattern)]];
+
 export function ModelStep() {
-  const { cfg, setCfg } = useStore();
-  const groups = [{ name: 'GLASS', items: D.MODELS.filter((m) => m.glass) }, { name: 'WITHOUT GLASS', items: D.MODELS.filter((m) => !m.glass) }];
+  const { cfg, setCfg, modelFilter, patch } = useStore();
+  const test = FILTERS.find((f) => f[0] === modelFilter)[2];
+  const groups = [{ name: 'GLASS', items: D.MODELS.filter((m) => m.glass && test(m)) }, { name: 'WITHOUT GLASS', items: D.MODELS.filter((m) => !m.glass && test(m)) }].filter((g) => g.items.length);
   return (
     <>
+      <div role="group" aria-label="Filter models" className="adorn-rail" style={{ position: 'sticky', top: 0, zIndex: 3, display: 'flex', gap: 8, padding: '10px var(--pp)', overflowX: 'auto', background: '#fff', borderBottom: '1px solid #E4E5E6' }}>
+        {FILTERS.map(([id, label, fn]) => {
+          const on = modelFilter === id;
+          return (
+            <button key={id} aria-pressed={on} onClick={() => patch({ modelFilter: id })} className={on ? 'hv-bggold' : 'hv-tint'}
+              style={{ flex: 'none', height: 40, padding: '0 16px', border: `1px solid ${on ? G : '#C4C6C8'}`, borderRadius: 999, background: on ? G : '#fff', color: on ? '#fff' : TX, font: 'inherit', fontSize: 14, fontWeight: on ? 500 : 400, cursor: 'pointer' }}>
+              {label}<span style={{ marginLeft: 6, fontSize: 12, opacity: 0.8 }}>{D.MODELS.filter(fn).length}</span>
+            </button>
+          );
+        })}
+      </div>
       {groups.map((g) => (
         <div key={g.name}>
-          <h2 style={{ position: 'sticky', top: 0, zIndex: 2, margin: 0, padding: '14px 24px', background: '#fff', borderBottom: '1px solid #E4E5E6', fontSize: 18, fontWeight: 500, letterSpacing: '0.04em' }}>{g.name}</h2>
-          <div style={{ padding: '16px 24px 24px', display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0,1fr))', gap: 12 }}>
+          <h2 style={{ position: 'sticky', top: 60, zIndex: 2, margin: 0, padding: '14px var(--pp)', background: '#fff', borderBottom: '1px solid #E4E5E6', fontSize: 18, fontWeight: 500, letterSpacing: '0.04em' }}>{g.name}</h2>
+          <div style={{ padding: '16px var(--pp) 24px', display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0,1fr))', gap: 12 }}>
             {g.items.map((m) => <ModelCard key={m.code} code={m.code} sel={m.code === cfg.model} onPick={() => setCfg({ model: m.code })} />)}
           </div>
         </div>
       ))}
+      {!groups.length && <div style={{ margin: 'var(--pp)', padding: '32px 16px', border: '1px dashed #C4C6C8', borderRadius: 4, textAlign: 'center', color: '#5F6265' }}>No models match this filter.</div>}
     </>
   );
 }
@@ -94,8 +110,9 @@ export function ModelStep() {
 export function Variants() {
   const { cfg, setCfg } = useStore();
   const R = D.RULES.models[cfg.model];
+  if (!R.variants.length) return <div style={{ margin: 'var(--pp)', padding: '32px 16px', border: '1px dashed #C4C6C8', borderRadius: 4, textAlign: 'center', color: '#5F6265' }}>This model has no variants.</div>;
   return (
-    <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
+    <div style={{ padding: 'var(--pp)', display: 'flex', flexDirection: 'column', gap: 16 }}>
       <h2 style={H2}>External and internal variations</h2>
       {R.variants.map((x) => {
         const vc = Object.assign({}, cfg, { variant: x }), sel = x === cfg.variant;
@@ -128,7 +145,7 @@ export function Systems() {
   const { cfg, setCfg, sysOpen, patch } = useStore();
   const R = D.RULES.models[cfg.model];
   return (
-    <div role="radiogroup" aria-label="System" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 12 }}>
+    <div role="radiogroup" aria-label="System" style={{ padding: 'var(--pp)', display: 'flex', flexDirection: 'column', gap: 12 }}>
       {D.SYSTEMS.map((x) => {
         const ok = R.systems.includes(x.id), sel = x.id === cfg.system, open = !!sysOpen[x.id];
         return (

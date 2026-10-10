@@ -5,9 +5,9 @@ import { useStore } from './store';
 import { Ic, G, TX } from './ui';
 
 const ERR = '#C0392B';
-const overlay = { position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(43,45,47,.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 };
+const overlay = { position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(43,45,47,.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom))', overscrollBehavior: 'contain' };
 const dialog = (w) => ({ width: '100%', maxWidth: w, background: '#fff', borderRadius: 4, padding: 24, display: 'flex', flexDirection: 'column', gap: 14 });
-const h2 = { margin: 0, fontSize: 24, fontWeight: 500 };
+const h2 = { margin: 0, fontSize: 22, fontWeight: 500 };
 const grey = { height: 44, padding: '0 20px', border: 0, borderRadius: 4, background: '#E9EAEB', color: TX, font: 'inherit', cursor: 'pointer' };
 const gold = { height: 44, padding: '0 20px', border: 0, borderRadius: 4, background: G, color: '#fff', font: 'inherit', fontWeight: 500, cursor: 'pointer' };
 const outlined = { height: 44, padding: '0 20px', border: '1px solid #2B2D2F', borderRadius: 4, background: '#fff', color: TX, font: 'inherit', cursor: 'pointer' };
@@ -25,7 +25,7 @@ function ResetModal() {
       <div role="dialog" aria-modal="true" aria-labelledby="reset-title" onClick={stop} style={dialog(440)}>
         <h2 id="reset-title" style={h2}>Reset configuration</h2>
         <p style={{ margin: 0, lineHeight: 1.5, color: '#45484B' }}>All your choices will be discarded and the default door restored. This can’t be undone unless you saved a reference code.</p>
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 6 }}>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', flexWrap: 'wrap', gap: 10, marginTop: 6 }}>
           <button onClick={closeModal} className="hv-grey" style={grey}>Cancel</button>
           <button onClick={confirmReset} className="hv-bggold" style={gold}>Reset</button>
         </div>
@@ -49,7 +49,7 @@ function CookieModal() {
         {row('Necessary', 'Remembers your configuration and consent. Always on.', true, () => {}, true)}
         {row('Analytics', 'Anonymous usage statistics.', ckA, () => patch({ ckA: !ckA }))}
         {row('Marketing', 'Personalised content on other sites.', ckM, () => patch({ ckM: !ckM }))}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 6 }}>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', flexWrap: 'wrap', gap: 10, marginTop: 6 }}>
           <button onClick={() => saveCookie(ckA, ckM)} className="hv-tint" style={outlined}>Save settings</button>
           <button onClick={() => saveCookie(true, true)} style={dark}>Agree to all</button>
         </div>
@@ -65,8 +65,8 @@ function EnquiryModal() {
   const fields = [['name', 'Full name', 'text', 'name'], ['email', 'Email', 'email', 'email'], ['phone', 'Phone (optional)', 'tel', 'tel'], ['postcode', 'Postcode', 'text', 'postal-code']];
   return (
     <Overlay onClose={closeModal}>
-      <div role="dialog" aria-modal="true" aria-labelledby="enq-title" onClick={stop} style={{ width: '100%', maxWidth: 560, maxHeight: '92vh', overflowY: 'auto', background: '#fff', borderRadius: 4, display: 'flex', flexDirection: 'column' }}>
-        <div style={{ height: 64, flex: 'none', background: '#5A5D60', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 8px 0 24px' }}>
+      <div role="dialog" aria-modal="true" aria-labelledby="enq-title" onClick={stop} style={{ width: '100%', maxWidth: 560, maxHeight: '92dvh', overflowY: 'auto', background: '#fff', borderRadius: 4, display: 'flex', flexDirection: 'column' }}>
+        <div style={{ position: 'sticky', top: 0, zIndex: 1, height: 64, flex: 'none', background: '#5A5D60', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 8px 0 24px' }}>
           <h2 id="enq-title" style={h2}>Enquiry</h2>
           <button onClick={closeModal} aria-label="Close" style={{ width: 44, height: 44, border: 0, background: 'transparent', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><Ic n="x" /></button>
         </div>

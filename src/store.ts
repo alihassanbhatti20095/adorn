@@ -70,16 +70,22 @@ function initialCfg() {
 }
 function initialCookie() { try { return JSON.parse(LS.get('adorn.cookies')); } catch { return null; } }
 
+export function viewport() {
+  if (typeof window === 'undefined') return { isMobile: false, isLand: false, isShort: false };
+  const w = window.innerWidth, h = window.innerHeight, isLand = h < 500 && w > h;
+  return { isLand, isMobile: w < 900 || isLand, isShort: h < 680 };
+}
+
 let pt, tt;
 let dragState = null;
 
 export const useStore = create((set, get) => ({
-  cfg: initialCfg(), step: hashStep() || 'model', panelOpen: true, view: 'outside', zoom: 1,
+  cfg: initialCfg(), step: hashStep() || 'model', panelOpen: true, sheetTall: false, modelFilter: 'all', view: 'outside', zoom: 1,
   colourTab: 'outside', ralQ: '', searchQ: '', sysOpen: {}, acc: { handles: true, inside: false }, lockOpen: {},
   modal: null, refCode: '', loadInput: '', loadError: '', toast: '',
   enq: { name: '', email: '', phone: '', postcode: '', message: '', showroom: 'No preference', consent: false }, enqErr: {}, enqStatus: 'idle',
   cookie: initialCookie(), ckA: false, ckM: false, lang: LS.get('adorn.lang') || 'en',
-  rendering: false, house: null, isMobile: typeof window !== 'undefined' && window.innerWidth < 768,
+  rendering: false, house: null, ...viewport(),
   stageW: 900, stageH: 700, printing: false, dropHover: false, stageEl: null, ovEl: null, fileEl: null,
 
   patch: (p) => set(p),

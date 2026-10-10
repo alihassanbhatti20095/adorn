@@ -26,7 +26,7 @@ export function House() {
     </label>
   );
   return (
-    <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 18 }}>
+    <div style={{ padding: 'var(--pp)', display: 'flex', flexDirection: 'column', gap: 18 }}>
       <p style={{ margin: 0, lineHeight: 1.5 }}>Upload a photo of your house front and place the door into the opening to preview it in situ.</p>
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
         <button onClick={pick} className="hv-bggold" style={goldBtn}><Ic n="upload" s={18} sw={2} />Load image</button>
@@ -52,7 +52,7 @@ export function summary(c) {
   const sys = D.systemById[c.system], T = D.typeById[c.type], hd = D.handleById[c.handle], lk = D.lockById[c.lock], gl = D.glassById[c.glass], co = D.colourById, dm = dims(c);
   const rows = [
     { step: 'model', label: 'Door model', value: c.model, thumb: thumb(c.model) },
-    { step: 'variants', label: 'Model variant', value: `${c.model} ${c.variant} — ${VAR_DESC[c.variant]}` },
+    { step: 'variants', label: 'Model variant', value: `${c.model} ${c.variant} — ${VAR_DESC[c.variant]}`, thumb: thumb(c.model, { variant: c.variant }) },
     { step: 'type', label: 'Type', value: T.label, thumb: getTypeThumb(T.id) },
     { step: 'systems', label: 'System', value: sys.name },
     { step: 'construction', label: 'Dimensions', value: `Door ${dm.W} x ${dm.H} mm · Overall ${dm.OW} x ${dm.OH} mm` },
@@ -74,7 +74,7 @@ export function summary(c) {
 export function PrintPanel() {
   const { cfg, go } = useStore();
   return (
-    <div style={{ padding: '8px 24px 24px' }}>
+    <div style={{ padding: '8px var(--pp) 24px' }}>
       {summary(cfg).map((r, i) => (
         <div key={i} style={{ display: 'grid', gridTemplateColumns: '48px 1fr auto', gap: 12, alignItems: 'center', padding: '10px 0', borderBottom: '1px solid #E4E5E6' }}>
           <span style={{ width: 48, height: 48, borderRadius: 4, background: r.sw, display: 'flex', justifyContent: 'center', alignItems: 'flex-end', overflow: 'hidden' }}>{r.thumb}</span>
@@ -89,7 +89,7 @@ export function PrintPanel() {
 export function PrintActions() {
   const { patch, enqStatus, doPrint } = useStore();
   return (
-    <div style={{ flex: 'none', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, padding: '14px 24px', borderTop: '1px solid #E4E5E6', background: '#fff' }}>
+    <div style={{ flex: 'none', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, padding: '14px var(--pp)', borderTop: '1px solid #E4E5E6', background: '#fff' }}>
       <button onClick={() => patch({ modal: 'enquiry', enqStatus: enqStatus === 'sent' ? 'idle' : enqStatus })} className="hv-bggold"
         style={{ height: 48, border: 0, borderRadius: 4, background: G, color: '#fff', font: 'inherit', fontSize: 16, fontWeight: 500, cursor: 'pointer' }}>Enquiry</button>
       <button onClick={doPrint} className="hv-grey"
@@ -103,7 +103,7 @@ export function Save() {
   const { cfg, refCode, loadInput, loadError, patch, copy, loadCode } = useStore();
   const field = { border: '1px solid #C4C6C8', borderRadius: 4, color: TX, background: '#F7F7F7' };
   return (
-    <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 22 }}>
+    <div style={{ padding: 'var(--pp)', display: 'flex', flexDirection: 'column', gap: 22 }}>
       <p style={{ margin: 0, lineHeight: 1.5 }}>Reference code represents current configuration. You can save this code if you want to load this configuration later.</p>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         <label htmlFor="ref-code" style={{ fontSize: 14, fontWeight: 500 }}>Reference code:</label>
@@ -120,6 +120,13 @@ export function Save() {
             <div style={{ display: 'flex', gap: 8 }}>
               <input id="share-url" readOnly value={shareUrl(refCode)} onFocus={(e) => e.target.select()} style={{ ...field, flex: 1, minWidth: 0, height: 40, padding: '0 10px', font: 'inherit', fontSize: 12 }} />
               <button onClick={() => copy(shareUrl(refCode), 'Link copied')} className="hv-grey" style={{ height: 40, padding: '0 14px', border: 0, borderRadius: 4, background: '#E9EAEB', color: TX, font: 'inherit', cursor: 'pointer' }}>Copy link</button>
+            </div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 4 }}>
+              <a href={`mailto:?subject=${encodeURIComponent('My Adorn door configuration ' + cfg.model + ' ' + cfg.variant)}&body=${encodeURIComponent('Reference code: ' + refCode + String.fromCharCode(10, 10) + 'Open it directly: ' + shareUrl(refCode))}`} className="hv-grey"
+                style={{ ...greyBtn, height: 44, textDecoration: 'none', color: TX }}>Email me this code</a>
+              {typeof navigator !== 'undefined' && navigator.share && (
+                <button onClick={() => navigator.share({ title: 'Adorn door configuration', text: `${cfg.model} ${cfg.variant}`, url: shareUrl(refCode) }).catch(() => {})} className="hv-grey" style={greyBtn}>Share…</button>
+              )}
             </div>
           </div>
         )}

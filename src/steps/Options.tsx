@@ -40,7 +40,7 @@ export function Construction() {
   const { cfg, setCfg } = useStore();
   const sys = D.systemById[cfg.system], T = D.typeById[cfg.type], dm = dims(cfg);
   return (
-    <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 28 }}>
+    <div style={{ padding: 'var(--pp)', display: 'flex', flexDirection: 'column', gap: 28 }}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
         <h2 style={H2}>Choose dimension</h2>
         <Dim k="width" label="Door width" min={sys.minW} max={sys.maxW} />
@@ -126,14 +126,14 @@ export function Colours() {
             style={{ height: 52, border: 0, borderBottom: `3px solid ${colourTab === id ? G : 'transparent'}`, background: '#fff', font: 'inherit', fontSize: 14, fontWeight: colourTab === id ? 500 : 400, color: TX, cursor: 'pointer' }}>{label}</button>
         ))}
       </div>
-      <div style={{ padding: '16px 24px 0', ...muted }}>Selected: <strong style={{ color: TX, fontWeight: 500 }}>{cur.name + (cur.label ? ' ' + cur.label : '')}</strong></div>
+      <div style={{ padding: '16px var(--pp) 0', ...muted }}>Selected: <strong style={{ color: TX, fontWeight: 500 }}>{cur.name + (cur.label ? ' ' + cur.label : '')}</strong></div>
       {groups.map(([name, items]) => (
-        <div key={name} style={{ padding: '18px 24px 6px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div key={name} style={{ padding: '18px var(--pp) 6px', display: 'flex', flexDirection: 'column', gap: 12 }}>
           <h2 style={H2}>{name}</h2>
           <div style={swatchGrid}>{items.map((c) => <Swatch key={c.id} col={c} sel={c.id === curId} onPick={() => pick(c)} wrapName />)}</div>
         </div>
       ))}
-      <div style={{ padding: '18px 24px 28px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div style={{ padding: '18px var(--pp) 28px', display: 'flex', flexDirection: 'column', gap: 12 }}>
         <h2 style={H2}>Full RAL Classic</h2>
         <label style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
           <span style={{ position: 'absolute', left: 12, color: '#5F6265', display: 'flex' }}><Ic n="search" s={18} sw={2} /></span>
@@ -148,10 +148,20 @@ export function Colours() {
 }
 
 /* ------------------------------------------------------------------ Glass */
+const PRIVACY = { chinchilla: 4, clear: 1, mastercarre: 3, masterligne: 3, satinato: 5 };
+function Privacy({ level }) {
+  return (
+    <span role="img" aria-label={`Privacy level ${level} of 5`} style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 4 }}>
+      {[1, 2, 3, 4, 5].map((i) => <span key={i} style={{ width: 8, height: 8, borderRadius: '50%', background: i <= level ? G : '#D5D7D9' }} />)}
+      <span style={{ ...muted, marginLeft: 4 }}>Privacy</span>
+    </span>
+  );
+}
+
 export function Glass() {
   const { cfg, setCfg } = useStore();
   return (
-    <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 24 }}>
+    <div style={{ padding: 'var(--pp)', display: 'flex', flexDirection: 'column', gap: 24 }}>
       {D.GLASS_GROUPS.map((g) => (
         <div key={g.name} role="radiogroup" aria-label={g.name} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           <h2 style={H2}>{g.name}</h2>
@@ -162,7 +172,7 @@ export function Glass() {
                 style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '10px 12px', border: `1px solid ${sel ? G : DV}`, borderRadius: 4, background: '#fff', font: 'inherit', color: TX, cursor: 'pointer', textAlign: 'left' }}>
                 <RadioDot on={sel} />
                 <span style={{ width: 52, height: 52, flex: 'none', borderRadius: 4, background: x.bg, boxShadow: 'inset 0 0 0 1px rgba(0,0,0,.12)' }} />
-                <span style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={{ fontSize: 14, fontWeight: 500 }}>{x.name}</span><span style={muted}>{x.desc}</span></span>
+                <span style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={{ fontSize: 14, fontWeight: 500 }}>{x.name}</span><span style={muted}>{x.desc}</span>{PRIVACY[x.id] && <Privacy level={PRIVACY[x.id]} />}</span>
               </button>
             );
           })}
@@ -190,7 +200,7 @@ export function Handles() {
   const { cfg, setCfg, acc, patch } = useStore();
   const ral = D.ralByCode[cfg.handleRal];
   return (
-    <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 10 }}>
+    <div style={{ padding: 'var(--pp)', display: 'flex', flexDirection: 'column', gap: 10 }}>
       <Accordion label="Door handles" open={acc.handles} onToggle={() => patch({ acc: Object.assign({}, acc, { handles: !acc.handles }) })}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14, padding: '4px 0 10px' }}>
           {D.HANDLES.map((f) => (
@@ -262,7 +272,7 @@ export function Accessories() {
     </button>
   );
   return (
-    <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 12 }}>
+    <div style={{ padding: 'var(--pp)', display: 'flex', flexDirection: 'column', gap: 12 }}>
       <p style={{ margin: 0, ...muted }}>Select any number of accessories.</p>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0,1fr))', gap: 10 }}>
         {card('None', 'No accessories', none, () => setCfg({ accessories: [] }), null, null)}
@@ -279,7 +289,7 @@ export function Accessories() {
 export function Locks() {
   const { cfg, setCfg, lockOpen, patch } = useStore();
   return (
-    <div role="radiogroup" aria-label="Lock" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 10 }}>
+    <div role="radiogroup" aria-label="Lock" style={{ padding: 'var(--pp)', display: 'flex', flexDirection: 'column', gap: 10 }}>
       {D.LOCKS.map((x) => {
         const sel = x.id === cfg.lock, open = !!lockOpen[x.id];
         return (
