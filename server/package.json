@@ -8,8 +8,10 @@
     "start": "node index.js",
     "test": "node test.js"
   },
-  "engines": { "node": ">=18" },
+  "engines": {
+    "node": ">=20"
+  },
   "dependencies": {
-    "nodemailer": "^6.9.16"
+    "nodemailer": "^10.1.0"
   }
 }

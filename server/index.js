@@ -205,11 +205,10 @@ export async function handle(req, res) {
   return send(res, 200, { ok: true, id: rec.id });
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const server = http.createServer((req, res) => handle(req, res).catch((e) => {
-    console.error(e);
-    if (!res.headersSent) send(res, 500, { error: 'Server error' });
-  }));
-  server.requestTimeout = 15_000;
-  server.listen(config.port, config.host, () => console.log(`Adorn enquiry service on http://${config.host}:${config.port} (mail: ${config.mailMode}, to: ${config.to.join(', ') || 'NOT SET'})`));
-}
+// Starts on import. pm2 runs this through its own wrapper, so do not gate on process.argv[1].
+const server = http.createServer((req, res) => handle(req, res).catch((e) => {
+  console.error(e);
+  if (!res.headersSent) send(res, 500, { error: 'Server error' });
+}));
+server.requestTimeout = 15_000;
+server.listen(config.port, config.host, () => console.log(`Adorn enquiry service on http://${config.host}:${config.port} (mail: ${config.mailMode}, to: ${config.to.join(', ') || 'NOT SET'})`));
