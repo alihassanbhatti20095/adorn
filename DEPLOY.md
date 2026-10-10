@@ -61,12 +61,17 @@ MAIL_MODE=smtp  SMTP_HOST=smtp.gmail.com  SMTP_PORT=587  SMTP_SECURE=false
 SMTP_USER=dean@aluglass.co.uk  SMTP_PASS=<Google App Password, 16 chars, no spaces>
 MAIL_FROM="Adorn Configurator <dean@aluglass.co.uk>"   (must match SMTP_USER; Gmail rewrites other senders)
 ENQUIRY_TO=dean@aluglass.co.uk   SEND_CONFIRMATION=true
+SITE_URL=https://configurator.adorngroup.co.uk   (used for the "Open your configuration" link and the PDF QR code)
 DATA_FILE=data/enquiries.jsonl   RATE_LIMIT_PER_HOUR=5
 ```
 A normal Google password is rejected (error 535); an App Password is required (myaccount.google.com/apppasswords, needs 2-Step Verification). If it is revoked, create a new one, edit `.env`, then `pm2 restart adorn-enquiry`. Test the login without sending mail:
 ```bash
 cd /opt/adorn/server && SMTP_USER='dean@aluglass.co.uk' SMTP_PASS='<app password>' node -e "import('nodemailer').then(async({default:n})=>{try{await n.createTransport({host:'smtp.gmail.com',port:587,auth:{user:process.env.SMTP_USER,pass:process.env.SMTP_PASS}}).verify();console.log('LOGIN OK')}catch(e){console.log('FAILED',e.message)}})"
 ```
+
+### What the emails contain
+
+Both emails (notification to `ENQUIRY_TO`, copy to the customer) are branded HTML with the Adorn logo, the outside and inside door renders, the customer's details and message, the full configuration, and a reference code. The same A4 PDF of the enquiry is attached to both. Plain-text alternatives are included. The logo is read from `/opt/adorn/public/adorn-logo.jpg` (override with `LOGO_FILE`). If PDF or image creation fails the emails still go out without them. Backend deps are `nodemailer`, `pdfkit` and `qrcode-generator` (run `npm ci --omit=dev` in `server/` after pulling). The browser sends the door renders as small JPEGs (about 50 KB total request), so the 200k nginx limit below is enough.
 
 ### nginx route (already in place)
 

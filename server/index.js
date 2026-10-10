@@ -6,6 +6,8 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import nodemailer from 'nodemailer';
+import { renderEmail } from './templates.js';
+import { buildPdf } from './pdf.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
@@ -31,11 +33,9 @@ export const config = {
 };
 
 const SHOWROOMS = ['No preference', 'Main showroom', 'Trade showroom', 'Video consultation'];
-const MAX_BODY = 100 * 1024;
+const MAX_BODY = 1024 * 1024; // form + two small door PNGs
 
 /* ---------- helpers ---------- */
-const ESC = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
-const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ESC[c]);
 // strip control characters (keeps \n and \t), trim, cap length
 const clean = (v, max) => (typeof v === 'string' ? v.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '').trim().slice(0, max) : '');
 const oneLine = (v, max) => clean(v, max).replace(/[\r\n]+/g, ' ');
@@ -91,26 +91,47 @@ function mailer() {
   return transport;
 }
 
-export function emailBody(rec) {
-  const rows = rec.summary.map((r) => `${r.label}: ${r.value}`).join('\n');
-  const text = [
-    `New configurator enquiry ${rec.id}`, '',
-    `Name: ${rec.name}`, `Email: ${rec.email}`, `Phone: ${rec.phone || '-'}`, `Postcode: ${rec.postcode}`, `Showroom: ${rec.showroom}`, '',
-    'Message:', rec.message || '-', '', 'Configuration:', rows || JSON.stringify(rec.config), '', `Reference code: ${rec.reference}`,
-  ].join('\n');
-  const tr = (a, b) => `<tr><td style="padding:4px 12px 4px 0;color:#5F6265;vertical-align:top">${esc(a)}</td><td style="padding:4px 0">${esc(b)}</td></tr>`;
-  const html = `<div style="font-family:Arial,sans-serif;color:#2B2D2F;font-size:14px">
-<h2 style="margin:0 0 12px">New configurator enquiry</h2>
-<table>${tr('Name', rec.name)}${tr('Email', rec.email)}${tr('Phone', rec.phone || '-')}${tr('Postcode', rec.postcode)}${tr('Showroom', rec.showroom)}</table>
-<h3 style="margin:16px 0 6px">Message</h3><p style="white-space:pre-wrap;margin:0">${esc(rec.message || '-')}</p>
-<h3 style="margin:16px 0 6px">Configuration</h3><table>${rec.summary.map((r) => tr(r.label, r.value)).join('')}</table>
-<p style="color:#5F6265;font-size:12px;margin-top:16px">Reference code (load under Save / load): <code style="word-break:break-all">${esc(rec.reference)}</code></p></div>`;
-  return { text, html };
+/* ---------- branded emails + PDF ---------- */
+const SITE_URL = (env.SITE_URL || '').replace(/\/+$/, '');
+const logoPath = path.resolve(here, env.LOGO_FILE || '../public/adorn-logo.jpg');
+let logo = null;
+try { logo = fs.readFileSync(logoPath); } catch { console.warn(`logo not found at ${logoPath}: emails and PDF will have no logo`); }
+
+// The browser sends small JPEG (or PNG) renders of the door. Accept only real, small images: check the magic bytes, not the label.
+export function imageBuffer(dataUrl) {
+  const m = typeof dataUrl === 'string' && dataUrl.match(/^data:image\/(png|jpeg);base64,([A-Za-z0-9+/=]+)$/);
+  if (!m || m[2].length > 600_000) return null;
+  const b = Buffer.from(m[2], 'base64');
+  if (m[1] === 'jpeg') return b.length > 100 && b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff ? b : null;
+  if (b.length < 33 || b.readUInt32BE(0) !== 0x89504e47) return null;
+  const w = b.readUInt32BE(16), h = b.readUInt32BE(20);
+  return w > 0 && h > 0 && w <= 2000 && h <= 2000 ? b : null;
+}
+const isPng = (b) => b[0] === 0x89;
+
+const dateOf = (rec) => new Date(rec.receivedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+
+// Build the PDF once and reuse it for both emails. A PDF failure never blocks the enquiry.
+async function prepare(rec, images) {
+  const ctx = { siteUrl: SITE_URL, logo, images, date: dateOf(rec) };
+  const pdf = await buildPdf(rec, ctx).catch((e) => { console.error('pdf failed', rec.id, e.message); return null; });
+  return { ctx, pdf };
 }
 
-async function sendMail(rec) {
+function attachmentsFor(rec, prep) {
+  const a = [];
+  if (logo) a.push({ filename: 'adorn-logo.jpg', content: logo, cid: 'logo', contentDisposition: 'inline' });
+  for (const [side, cid] of [['outside', 'door-outside'], ['inside', 'door-inside']]) {
+    const img = prep.ctx.images[side];
+    if (img) a.push({ filename: `${side}-view.${isPng(img) ? 'png' : 'jpg'}`, content: img, contentType: isPng(img) ? 'image/png' : 'image/jpeg', cid, contentDisposition: 'inline' });
+  }
+  if (prep.pdf) a.push({ filename: `Adorn-enquiry-${rec.id}.pdf`, content: prep.pdf, contentType: 'application/pdf' });
+  return a;
+}
+
+async function sendMail(rec, prep) {
   if (!config.to.length) throw new Error('ENQUIRY_TO not configured');
-  const { text, html } = emailBody(rec);
+  const { text, html } = renderEmail(rec, 'staff', prep.ctx);
   const info = await mailer().sendMail({
     from: config.from,
     to: config.to,
@@ -118,39 +139,23 @@ async function sendMail(rec) {
     subject: `Configurator enquiry ${rec.id}: ${rec.summary[0] ? rec.summary[0].value : 'door'} (${rec.name})`,
     text,
     html,
+    attachments: attachmentsFor(rec, prep),
   });
   if (config.mailMode === 'log') console.log('--- MAIL (log mode) ---\n' + info.message.toString() + '\n-----------------------');
 }
 
-// Automatic acknowledgement to the customer. Best effort: a failure here never fails the enquiry.
-export function confirmationBody(rec) {
-  const rows = rec.summary.map((r) => `${r.label}: ${r.value}`).join('\n');
-  const text = [
-    `Hello ${rec.name},`, '',
-    'Thank you for your enquiry. We have received your door configuration and will be in touch shortly.', '',
-    `Your reference: ${rec.id}`, '',
-    'A copy of your enquiry:', `Name: ${rec.name}`, `Email: ${rec.email}`, `Phone: ${rec.phone || '-'}`, `Postcode: ${rec.postcode}`, `Showroom: ${rec.showroom}`, '',
-    'Your message:', rec.message || '-', '',
-    'Your configuration:', rows || '-', '',
-    'You can reload this exact door any time under Save / load with this reference code:', rec.reference, '',
-    'Reply to this email if you would like to add anything.',
-  ].join('\n');
-  const tr = (a, b) => `<tr><td style="padding:4px 12px 4px 0;color:#5F6265;vertical-align:top">${esc(a)}</td><td style="padding:4px 0">${esc(b)}</td></tr>`;
-  const html = `<div style="font-family:Arial,sans-serif;color:#2B2D2F;font-size:14px;line-height:1.5">
-<p>Hello ${esc(rec.name)},</p>
-<p>Thank you for your enquiry. We have received your door configuration and will be in touch shortly.</p>
-<p>Your reference: <strong>${esc(rec.id)}</strong></p>
-<h3 style="margin:16px 0 6px">A copy of your enquiry</h3><table>${tr('Name', rec.name)}${tr('Email', rec.email)}${tr('Phone', rec.phone || '-')}${tr('Postcode', rec.postcode)}${tr('Showroom', rec.showroom)}</table>
-<h3 style="margin:16px 0 6px">Your message</h3><p style="white-space:pre-wrap;margin:0">${esc(rec.message || '-')}</p>
-<h3 style="margin:16px 0 6px">Your configuration</h3><table>${rec.summary.map((r) => tr(r.label, r.value)).join('')}</table>
-<p style="color:#5F6265;font-size:12px">Reload this exact door under Save / load with this reference code:<br><code style="word-break:break-all">${esc(rec.reference)}</code></p>
-<p>Reply to this email if you would like to add anything.</p></div>`;
-  return { text, html };
-}
-
-async function sendConfirmation(rec) {
-  const { text, html } = confirmationBody(rec);
-  const info = await mailer().sendMail({ from: config.from, to: rec.email, replyTo: config.to.length ? config.to[0] : undefined, subject: `We received your enquiry ${rec.id}`, text, html });
+// Branded copy of the enquiry for the customer. Best effort: a failure here never fails the enquiry.
+async function sendConfirmation(rec, prep) {
+  const { text, html } = renderEmail(rec, 'customer', prep.ctx);
+  const info = await mailer().sendMail({
+    from: config.from,
+    to: rec.email,
+    replyTo: config.to.length ? config.to[0] : undefined,
+    subject: `We received your enquiry ${rec.id}`,
+    text,
+    html,
+    attachments: attachmentsFor(rec, prep),
+  });
   if (config.mailMode === 'log') console.log('--- CONFIRMATION (log mode) ---\n' + info.message.toString() + '\n-----------------------');
 }
 
@@ -199,10 +204,11 @@ export async function handle(req, res) {
 
   const rec = { id: 'ENQ-' + crypto.randomBytes(4).toString('hex').toUpperCase(), receivedAt: new Date().toISOString(), ip, mailed: false, ...value };
   try { store(rec); } catch (e) { console.error('store failed', e); return send(res, 500, { error: 'Could not save your enquiry' }); }
+  const prep = await prepare(rec, { outside: imageBuffer(body.images && body.images.outside), inside: imageBuffer(body.images && body.images.inside) });
   try {
-    await sendMail(rec);
+    await sendMail(rec, prep);
     store({ id: rec.id, mailed: true, update: true });
-    if (config.confirm) await sendConfirmation(rec).catch((e) => console.error('confirmation failed', rec.id, e.message));
+    if (config.confirm) await sendConfirmation(rec, prep).catch((e) => console.error('confirmation failed', rec.id, e.message));
   } catch (e) {
     console.error('mail failed', rec.id, e.message);
     return send(res, 502, { error: 'We could not send your enquiry. Please try again.' });

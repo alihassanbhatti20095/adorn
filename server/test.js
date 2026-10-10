@@ -10,14 +10,16 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const port = 4100 + Math.floor(Math.random() * 800);
 const dataFile = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'adorn-')), 'enq.jsonl');
 const child = spawn(process.execPath, [path.join(here, 'index.js')], {
-  env: { ...process.env, PORT: String(port), MAIL_MODE: 'log', ENQUIRY_TO: 'sales@example.com', DATA_FILE: dataFile, RATE_LIMIT_PER_HOUR: '4' },
+  env: { ...process.env, PORT: String(port), MAIL_MODE: 'log', ENQUIRY_TO: 'sales@example.com', DATA_FILE: dataFile, RATE_LIMIT_PER_HOUR: '4', SITE_URL: 'https://example.test' },
   stdio: ['ignore', 'pipe', 'inherit'],
 });
 let out = '';
 child.stdout.on('data', (d) => { out += d; });
 
 const base = `http://127.0.0.1:${port}`;
+const PNG = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
 const good = {
+  images: { outside: PNG, inside: PNG },
   name: 'Jane <b>Doe</b>', email: 'jane@example.com', phone: '+44 20 7946 0958', postcode: 'SW1A 1AA', message: 'Hello\nworld',
   showroom: 'Main showroom', consent: true, reference: 'abc123', config: { model: 'AL1 88E' },
   summary: [{ label: 'Door model', value: 'AL1 88E' }, { label: 'Colour', value: 'RAL 7016' }],
@@ -40,6 +42,21 @@ check('email logged and HTML-escaped', mail.includes('Jane &lt;b&gt;Doe&lt;/b&gt
 const copy = mail.slice(mail.indexOf('CONFIRMATION'));
 check('confirmation sent to customer', out.includes('CONFIRMATION') && out.includes('To: jane@example.com') && mail.includes('We received your enquiry'));
 check('customer copy includes their details, message and configuration', ['+44 20 7946 0958', 'SW1A 1AA', 'Main showroom', 'Your message', 'Hello', 'RAL 7016', 'Jane &lt;b&gt;Doe&lt;/b&gt;'].every((t) => copy.includes(t)));
+// split the log into the staff mail and the customer mail, then inspect each
+const staffMsg = out.slice(out.indexOf('--- MAIL (log mode)'), out.indexOf('--- CONFIRMATION'));
+const custMsg = out.slice(out.indexOf('--- CONFIRMATION'));
+const qp = (s) => s.replace(/=\r?\n/g, '').replace(/=([0-9A-F]{2})/g, (_, h) => String.fromCharCode(parseInt(h, 16)));
+const pdfOf = (msg) => {
+  const m = msg.match(/Content-Type: application\/pdf[\s\S]*?\n\n([A-Za-z0-9+/=\n]+?)\n--/);
+  return m ? Buffer.from(m[1].replace(/\n/g, ''), 'base64') : null;
+};
+const staffPdf = pdfOf(staffMsg), custPdf = pdfOf(custMsg);
+check('staff mail has a real PDF attachment', !!staffPdf && staffPdf.subarray(0, 5).toString() === '%PDF-' && staffPdf.length > 3000 && /Adorn-enquiry-ENQ-[0-9A-F]{8}\.pdf/.test(staffMsg));
+check('customer mail has the same PDF attachment', !!custPdf && custPdf.equals(staffPdf));
+const sh = qp(staffMsg), ch = qp(custMsg);
+check('staff mail is branded HTML (logo, gold, sections, door renders)', ['cid:logo', '#B8925A', 'New configurator enquiry', 'Customer details', 'Door configuration', 'cid:door-outside', 'cid:door-inside', 'Reply to Jane'].every((t) => sh.includes(t)) && sh.includes('Content-Type: text/html') && sh.includes('Content-Type: text/plain'));
+check('customer mail is branded HTML with a link to reopen the door', ['cid:logo', '#B8925A', 'Thank you, Jane', 'Your details', 'Open your configuration', 'https://example.test/?config=abc123#/save'].every((t) => ch.includes(t)));
+check('logo and renders are attached inline', (staffMsg.match(/Content-ID: <logo/g) || []).length === 1 && staffMsg.includes('Content-ID: <door-outside') && staffMsg.includes('Content-ID: <door-inside'));
 const lines = fs.readFileSync(dataFile, 'utf8').trim().split('\n').map((l) => JSON.parse(l));
 check('stored then marked mailed', lines.length === 2 && lines[0].email === 'jane@example.com' && lines[1].mailed === true);
 
@@ -54,7 +71,7 @@ check('honeypot looks like success but stores nothing', r.status === 200 && befo
 r = await post('{not json', { 'X-Forwarded-For': '10.0.0.4' });
 check('bad JSON 400', r.status === 400);
 
-r = await post({ ...good, message: 'x'.repeat(200 * 1024) }, { 'X-Forwarded-For': '10.0.0.5' });
+r = await post({ ...good, message: 'x'.repeat(2 * 1024 * 1024) }, { 'X-Forwarded-For': '10.0.0.5' });
 check('oversized body 413', r.status === 413);
 
 r = await fetch(base + '/api/enquiry', { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: 'hi' });

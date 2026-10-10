@@ -157,7 +157,8 @@ export const useStore = create((set, get) => ({
     if (Object.keys(err).length) return;
     set({ enqStatus: 'sending', enqMsg: '' });
     const cfg = get().cfg;
-    import('./steps/Tools').then(({ summary }) => postEnquiry(Object.assign({}, q, { config: cfg, reference: enc(cfg), summary: summary(cfg).map((r) => ({ label: r.label, value: r.value })) })))
+    Promise.all([import('./steps/Tools'), import('./lib/render')])
+      .then(async ([{ summary }, { doorImages }]) => postEnquiry(Object.assign({}, q, { config: cfg, reference: enc(cfg), summary: summary(cfg).map((r) => ({ label: r.label, value: r.value })), images: await doorImages(door, cfg) })))
       .then(() => set((s) => ({ enqStatus: 'sent', enq: Object.assign({}, s.enq, { message: '' }) })))
       .catch((e) => set({ enqStatus: 'error', enqErr: (e && e.fields) || {}, enqMsg: e && (e.status === 502 || (e.status >= 400 && e.status < 500)) ? e.message : '' }));
   },

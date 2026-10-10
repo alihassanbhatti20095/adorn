@@ -19,7 +19,7 @@ npm run build    # type-check + production build into dist/
 Set `USE_REAL_RENDERS = true` in `src/Stage.tsx` and add PNGs at `public/renders/{model}/{variant}/{outside|inside}.png`. Missing files fall back to the SVG placeholder.
 
 ## Enquiry backend (`server/`)
-Small Node service (one dependency, nodemailer). `POST /api/enquiry` validates the form, appends it to `server/data/enquiries.jsonl`, and emails it to `ENQUIRY_TO` with the customer as Reply-To. It rate-limits per IP, has a honeypot field, caps the body at 100 KB and HTML-escapes everything in the email. `GET /api/health` for monitoring.
+Small Node service (one dependency, nodemailer). `POST /api/enquiry` validates the form, appends it to `server/data/enquiries.jsonl`, and emails it to `ENQUIRY_TO` with the customer as Reply-To. Emails are branded HTML (logo, door renders, details, configuration) with an A4 PDF copy attached, sent to Adorn and to the customer (`SEND_CONFIRMATION`). It rate-limits per IP, has a honeypot field, caps the body at 100 KB and HTML-escapes everything in the email. `GET /api/health` for monitoring.
 
 ```
 cd server && npm install
