@@ -24,11 +24,12 @@ export function View3D() {
   };
   return (
     <div style={{ padding: 'var(--pp)', display: 'flex', flexDirection: 'column', gap: 18 }}>
-      <p style={{ margin: 0, lineHeight: 1.5 }}>Your door on a house. Drag to look around, pinch or scroll to zoom, tap the door to open it.</p>
+      <p style={{ margin: 0, lineHeight: 1.5 }}>Your door on a British street. Drag to look around, pinch or scroll to zoom. Press Open door and a resident walks up the path to let themselves in.</p>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
         <button onClick={() => patch({ doorOpen: !doorOpen })} aria-pressed={doorOpen} className="hv-tint" style={{ ...greyBtn, height: 48, justifyContent: 'center', background: doorOpen ? '#F2E8D8' : '#E9EAEB' }}><Ic n="doorOpen" s={20} />{doorOpen ? 'Close door' : 'Open door'}</button>
         <button onClick={() => patch({ night: !night })} aria-pressed={night} className="hv-tint" style={{ ...greyBtn, height: 48, justifyContent: 'center', background: night ? '#F2E8D8' : '#E9EAEB' }}><Ic n={night ? 'sun' : 'moon'} s={20} />{night ? 'Daytime' : 'Night time'}</button>
       </div>
+      <button onClick={() => set({ person: !scene3d.person })} aria-pressed={scene3d.person} className="hv-tint" style={{ ...greyBtn, height: 48, justifyContent: 'center', background: scene3d.person ? '#F2E8D8' : '#E9EAEB' }}>{scene3d.person ? 'Person opens the door: on' : 'Person opens the door: off'}</button>
       <div>
         <h2 style={{ ...H2, marginBottom: 10 }}>Walls</h2>
         <div role="radiogroup" aria-label="Wall finish" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
