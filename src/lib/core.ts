@@ -3,7 +3,7 @@ import React from 'react';
 export const G = '#B8925A', GH = '#A68049', GT = '#F2E8D8', TX = '#2B2D2F', DV = '#E4E5E6', ERR = '#C0392B';
 export const h = React.createElement;
 export const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
-export const STEPS = [['reset', 'Reset to default', 'reset'], ['search', 'Search', 'search'], ['type', 'Type', 'type'], ['model', 'Door model', 'door'], ['variants', 'Model variants', 'layers'], ['systems', 'Systems', 'frame'], ['construction', 'Construction', 'ruler'], ['colours', 'Colours', 'palette'], ['glass', 'Glass', 'glass'], ['handles', 'Door handles and parts', 'handle'], ['accessories', 'Accessories', 'bell'], ['locks', 'Locks', 'lock'], ['house', 'Insert door into the house', 'house'], ['print', 'Print / Enquiry', 'printer'], ['save', 'Save / load', 'save']].map(([id, label, icon]) => ({ id, label, icon }));
+export const STEPS = [['reset', 'Reset to default', 'reset'], ['search', 'Search', 'search'], ['guide', 'Style finder', 'sparkle'], ['type', 'Type', 'type'], ['model', 'Door model', 'door'], ['variants', 'Model variants', 'layers'], ['systems', 'Systems', 'frame'], ['construction', 'Construction', 'ruler'], ['colours', 'Colours', 'palette'], ['glass', 'Glass', 'glass'], ['handles', 'Door handles and parts', 'handle'], ['accessories', 'Accessories', 'bell'], ['locks', 'Locks', 'lock'], ['house', 'Insert door into the house', 'house'], ['print', 'Print / Enquiry', 'printer'], ['save', 'Save / load', 'save']].map(([id, label, icon]) => ({ id, label, icon }));
 export const LANGS = [['en', 'English'], ['hr', 'Hrvatski'], ['de', 'Deutsch'], ['sl', 'Slovenščina'], ['fr', 'Français'], ['it', 'Italiano'], ['hu', 'Magyar']].map(([id, label]) => ({ id, label }));
 export const PANELS = { '1side': '1-side facing on the outside', '2side': '2-sided overlay panel inside and outside' };
 export const OPEN = { 'R-in': 'Right - inside', 'R-out': 'Right - outside', 'L-in': 'Left - inside', 'L-out': 'Left - outside' };
@@ -36,7 +36,17 @@ export const ICONS = {
   upload: [['p', 'M12 3v12'], ['p', 'm17 8-5-5-5 5'], ['p', 'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4']],
   download: [['p', 'M12 15V3'], ['p', 'm7 10 5 5 5-5'], ['p', 'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4']],
   copy: [['r', 8, 8, 14, 14, 2], ['p', 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2']],
-  image: [['r', 3, 3, 18, 18, 2], ['c', 9, 9, 2], ['p', 'm21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21']]
+  image: [['r', 3, 3, 18, 18, 2], ['c', 9, 9, 2], ['p', 'm21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21']],
+  undo: [['p', 'M3 7v6h6'], ['p', 'M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13']],
+  redo: [['p', 'M21 7v6h-6'], ['p', 'M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13']],
+  share: [['c', 18, 5, 3], ['c', 6, 12, 3], ['c', 18, 19, 3], ['p', 'm8.59 13.51 6.83 3.98'], ['p', 'm15.41 6.51-6.82 3.98']],
+  sun: [['c', 12, 12, 4], ['p', 'M12 2v2'], ['p', 'M12 20v2'], ['p', 'm4.93 4.93 1.41 1.41'], ['p', 'm17.66 17.66 1.41 1.41'], ['p', 'M2 12h2'], ['p', 'M20 12h2'], ['p', 'm6.34 17.66-1.41 1.41'], ['p', 'm19.07 4.93-1.41 1.41']],
+  moon: [['p', 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z']],
+  camera: [['p', 'M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z'], ['c', 12, 13, 3]],
+  sparkle: [['p', 'M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z']],
+  doorOpen: [['p', 'M13 4h3a2 2 0 0 1 2 2v14'], ['p', 'M2 20h3'], ['p', 'M13 20h9'], ['p', 'M10 12v.01'], ['p', 'M13 4.562v16.157a1 1 0 0 1-1.242.97L5 20V5.562a2 2 0 0 1 1.515-1.94l4-1A2 2 0 0 1 13 4.561Z']],
+  link: [['p', 'M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71'], ['p', 'M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71']],
+  qr: [['r', 3, 3, 7, 7, 1], ['r', 14, 3, 7, 7, 1], ['r', 3, 14, 7, 7, 1], ['p', 'M14 14h3v3'], ['p', 'M21 14v.01'], ['p', 'M14 21h3'], ['p', 'M21 17v4']]
 };
 export function icon(n, s, sw) {
   return h('svg', { width: s, height: s, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: sw, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true, focusable: 'false' },

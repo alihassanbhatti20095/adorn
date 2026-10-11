@@ -12,7 +12,7 @@ export async function doorPng(door, cfg, side, width = 420) {
   return svgToJpeg(el, width, TW, TH, PAD);
 }
 
-async function svgToJpeg(el, width, TW, TH, PAD) {
+async function svgToJpeg(el, width, TW, TH, PAD, transparent) {
   const height = Math.round((width * (TH + PAD)) / (TW + 2 * PAD));
   const { renderToStaticMarkup } = await import('react-dom/server');
   const svg = renderToStaticMarkup(React.cloneElement(el, { width, height }));
@@ -20,9 +20,15 @@ async function svgToJpeg(el, width, TW, TH, PAD) {
   const cv = document.createElement('canvas');
   cv.width = width; cv.height = height;
   const ctx = cv.getContext('2d');
-  ctx.fillStyle = '#F4F4F3'; ctx.fillRect(0, 0, width, height);
+  if (!transparent) { ctx.fillStyle = '#F4F4F3'; ctx.fillRect(0, 0, width, height); }
   ctx.drawImage(img, 0, 0, width, height);
-  return cv.toDataURL('image/jpeg', 0.85);
+  return transparent ? cv.toDataURL('image/png') : cv.toDataURL('image/jpeg', 0.85);
+}
+
+/** Door on a transparent background (no padding), for compositing over a camera frame. */
+export async function doorOverlay(door, cfg, width = 600) {
+  const { el, TW, TH } = door(cfg, 'outside', { pad: 0 });
+  return { url: await svgToJpeg(el, width, TW, TH, 0, true), ratio: TH / TW };
 }
 
 /**

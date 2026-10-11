@@ -3,6 +3,7 @@ import React, { useEffect } from 'react';
 import { D } from './data';
 import { useStore } from './store';
 import { Ic, G, TX } from './ui';
+import { ShareModal } from './Extras';
 
 const ERR = '#C0392B';
 const overlay = { position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(43,45,47,.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom))', overscrollBehavior: 'contain' };
@@ -127,5 +128,6 @@ export default function Modals() {
   if (modal === 'reset') return <ResetModal />;
   if (modal === 'cookies') return <CookieModal />;
   if (modal === 'enquiry') return <EnquiryModal />;
+  if (modal === 'share') return <ShareModal />;
   return null;
 }

@@ -5,6 +5,7 @@ import { PANELS, OPEN, VAR_DESC, enc } from '../lib/core';
 import { useStore, thumb, dims, shareUrl } from '../store';
 import { getTypeThumb } from './Selection';
 import { Ic, goldBtn, greyBtn, muted, G, TX } from '../ui';
+import { ColourMatch } from '../Extras';
 
 const ERR = '#C0392B';
 
@@ -31,9 +32,11 @@ export function House() {
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
         <button onClick={pick} className="hv-bggold" style={goldBtn}><Ic n="upload" s={18} sw={2} />Load image</button>
         <button onClick={saveImage} disabled={!house} style={{ ...greyBtn, color: house ? TX : '#B5B7B9', cursor: house ? 'pointer' : 'not-allowed' }}><Ic n="download" s={18} sw={2} />Save image</button>
+        <button onClick={() => patch({ arOpen: true })} className="hv-grey" style={greyBtn}><Ic n="camera" s={18} sw={2} />Use live camera</button>
       </div>
       {house && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+          <ColourMatch />
           {slider('Scale', Math.round(house.scale * 100) + '%', 0.3, 2.5, house.scale, onScale)}
           {slider('Brightness', Math.round(house.bright * 100) + '%', 0.4, 1.6, house.bright, (e) => set({ bright: +e.target.value }))}
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>

@@ -27,3 +27,17 @@ button,summary,[role=radio],[role=tab]{touch-action:manipulation;-webkit-tap-hig
   #adorn-app{display:none !important}
   #adorn-print{display:block !important}
 }
+/* header actions */
+.adorn-hbtn{width:40px;height:40px;flex:none;display:flex;align-items:center;justify-content:center;border:0;border-radius:50%;background:transparent;color:#2B2D2F;cursor:pointer}
+.adorn-hbtn:disabled{opacity:.35;cursor:default}
+.adorn-share{height:40px;flex:none;display:flex;align-items:center;gap:8px;padding:0 14px;border:0;border-radius:20px;background:#B8925A;color:#fff;font:inherit;font-weight:500;cursor:pointer}
+button,[role=radio]{-webkit-touch-callout:none}
+input[type=range]{min-height:32px;touch-action:pan-y}
+@media (max-width:899px){
+  .adorn-hbtn{width:44px;height:44px}
+  .adorn-share{width:44px;height:44px;padding:0;justify-content:center;border-radius:50%}
+  .adorn-share-t{display:none}
+}
+@media (max-width:640px){.adorn-modelcode{display:none !important}}
+@media (max-width:520px){.adorn-lang{display:none !important}}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms !important;transition-duration:.01ms !important}}

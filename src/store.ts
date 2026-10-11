@@ -38,7 +38,24 @@ export function hashStep() {
   return m && STEPS.find((s) => s.id === m[1]) ? m[1] : null;
 }
 
-export function shareUrl(code) { return location.origin + location.pathname + '?config=' + code + '#/save'; }
+export function shareUrl(code) { return location.origin + location.pathname + '?config=' + code; }
+
+/** Short share code: only what differs from the default door, so links stay compact. Old full codes still load. */
+export function shareCode(c) {
+  const d = D.DEFAULT, o = {};
+  for (const k of Object.keys(c)) {
+    if (k === 'colours') {
+      const cc = {};
+      for (const j of Object.keys(c.colours)) if (c.colours[j] !== d.colours[j]) cc[j] = c.colours[j];
+      if (Object.keys(cc).length) o.colours = cc;
+    } else if (JSON.stringify(c[k]) !== JSON.stringify(d[k])) o[k] = c[k];
+  }
+  return enc(o);
+}
+
+const buzz = (ms = 8) => { try { navigator.vibrate && navigator.vibrate(ms); } catch { /* unsupported */ } };
+const HIST_MAX = 60;
+let lastPush = 0, lastKeys = '';
 
 /* ---------- door render cache ---------- */
 const cache = new Map();
@@ -59,6 +76,7 @@ export function dims(c) {
 }
 
 /* ---------- initial state ---------- */
+const fromShare = typeof location !== 'undefined' && !!new URLSearchParams(location.search).get('config');
 function initialCfg() {
   let cfg = D.DEFAULT;
   try {
@@ -80,7 +98,8 @@ let pt, tt;
 let dragState = null;
 
 export const useStore = create((set, get) => ({
-  cfg: initialCfg(), step: hashStep() || 'model', panelOpen: true, sheetTall: false, modelFilter: 'all', view: 'outside', zoom: 1,
+  cfg: initialCfg(), past: [], future: [], fromShare, night: false, doorOpen: false, arOpen: false, visited: {}, pan: { x: 0, y: 0 },
+  step: hashStep() || 'model', panelOpen: !(fromShare && viewport().isMobile), sheetTall: false, modelFilter: 'all', view: 'outside', zoom: 1,
   colourTab: 'outside', ralQ: '', searchQ: '', sysOpen: {}, acc: { handles: true, inside: false }, lockOpen: {},
   modal: null, refCode: '', loadInput: '', loadError: '', toast: '',
   enq: { name: '', email: '', phone: '', postcode: '', message: '', showroom: 'No preference', consent: false, website: '' }, enqErr: {}, enqStatus: 'idle', enqMsg: '',
@@ -92,22 +111,48 @@ export const useStore = create((set, get) => ({
 
   pulse: () => { clearTimeout(pt); set({ rendering: true }); pt = setTimeout(() => set({ rendering: false }), 420); },
 
+  // Every config change goes through commit so undo/redo sees it. Rapid edits of the same field (a width slider) collapse into one undo step.
+  commit: (cfg, key) => {
+    const s = get();
+    if (JSON.stringify(cfg) === JSON.stringify(s.cfg)) return;
+    const now = Date.now(), merge = key && key === lastKeys && now - lastPush < 700 && s.past.length;
+    lastPush = now; lastKeys = key || '';
+    LS.set('adorn.cfg', JSON.stringify(cfg));
+    set({ cfg, past: merge ? s.past : [...s.past, s.cfg].slice(-HIST_MAX), future: [], refCode: '' });
+  },
+
   setCfg: (patch) => {
-    set((s) => {
-      const cfg = normalize(Object.assign({}, s.cfg, patch));
-      if (cfg.system !== s.cfg.system) {
-        const sy = D.systemById[cfg.system];
-        cfg.width = clamp(+cfg.width || sy.minW, sy.minW, sy.maxW);
-        cfg.height = clamp(+cfg.height || sy.minH, sy.minH, sy.maxH);
-      }
-      LS.set('adorn.cfg', JSON.stringify(cfg));
-      return { cfg, refCode: '' };
-    });
+    const s = get();
+    const cfg = normalize(Object.assign({}, s.cfg, patch));
+    if (cfg.system !== s.cfg.system) {
+      const sy = D.systemById[cfg.system];
+      cfg.width = clamp(+cfg.width || sy.minW, sy.minW, sy.maxW);
+      cfg.height = clamp(+cfg.height || sy.minH, sy.minH, sy.maxH);
+    }
+    get().commit(cfg, Object.keys(patch).join());
+    buzz();
     get().pulse();
   },
 
+  undo: () => {
+    const s = get();
+    if (!s.past.length) return;
+    lastKeys = '';
+    LS.set('adorn.cfg', JSON.stringify(s.past[s.past.length - 1]));
+    set({ cfg: s.past[s.past.length - 1], past: s.past.slice(0, -1), future: [s.cfg, ...s.future], refCode: '' });
+    buzz(12); get().pulse();
+  },
+  redo: () => {
+    const s = get();
+    if (!s.future.length) return;
+    lastKeys = '';
+    LS.set('adorn.cfg', JSON.stringify(s.future[0]));
+    set({ cfg: s.future[0], future: s.future.slice(1), past: [...s.past, s.cfg].slice(-HIST_MAX), refCode: '' });
+    buzz(12); get().pulse();
+  },
+
   go: (id, quiet) => {
-    set((s) => ({ step: id, panelOpen: true, modal: id === 'reset' && !quiet ? 'reset' : s.modal }));
+    set((s) => ({ step: id, panelOpen: true, visited: { ...s.visited, [s.step]: true, [id]: true }, modal: id === 'reset' && !quiet ? 'reset' : s.modal }));
     try { history.replaceState(null, '', location.pathname + location.search + '#/' + id); } catch { /* ignore */ }
   },
 
@@ -115,9 +160,8 @@ export const useStore = create((set, get) => ({
   closeModal: () => set((s) => ({ modal: null, enqStatus: s.enqStatus === 'sent' ? 'idle' : s.enqStatus })),
 
   confirmReset: () => {
-    const cfg = normalize(D.DEFAULT);
-    LS.set('adorn.cfg', JSON.stringify(cfg));
-    set({ cfg, modal: null, refCode: '', view: 'outside', zoom: 1 });
+    get().commit(normalize(D.DEFAULT), 'reset');
+    set({ modal: null, refCode: '', view: 'outside', zoom: 1, pan: { x: 0, y: 0 }, doorOpen: false });
     get().pulse(); get().showToast('Configuration reset');
   },
 
@@ -140,9 +184,9 @@ export const useStore = create((set, get) => ({
     const s = get();
     try {
       const o = dec(s.loadInput);
-      if (!o || !D.modelByCode[o.model]) throw new Error('bad');
-      const cfg = normalize(o); LS.set('adorn.cfg', JSON.stringify(cfg));
-      set({ cfg, loadError: '', loadInput: '' }); get().pulse(); get().showToast('Configuration loaded');
+      if (!o || typeof o !== 'object' || Array.isArray(o) || (o.model && !D.modelByCode[o.model])) throw new Error('bad');
+      get().commit(normalize(o), 'load');
+      set({ loadError: '', loadInput: '' }); get().pulse(); get().showToast('Configuration loaded');
     } catch { set({ loadError: 'Code not found' }); }
   },
 
