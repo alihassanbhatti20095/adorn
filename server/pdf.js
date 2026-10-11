@@ -69,6 +69,21 @@ export function buildPdf(rec, ctx) {
       doc.y = y + boxH + 18;
     }
 
+    /* selected model + variant door images */
+    const picks = [[`Selected model${rec.config && rec.config.model ? ' ' + rec.config.model : ''}`, ctx.images.model], [`Selected variant${rec.config && rec.config.variant ? ' ' + rec.config.variant : ''}`, ctx.images.variant]].filter((x) => x[1]);
+    if (picks.length) {
+      const boxW = (W - 16) / 2, boxH = 150;
+      need(boxH + 40);
+      const y = doc.y;
+      picks.forEach(([label, buf], i) => {
+        const x = picks.length === 2 ? L + i * (boxW + 16) : L + (W - boxW) / 2;
+        doc.rect(x, y, boxW, boxH).fill(PANEL);
+        try { doc.image(buf, x + 6, y + 6, { fit: [boxW - 12, boxH - 12], align: 'center', valign: 'center' }); } catch { /* skip bad image */ }
+        doc.font('Helvetica').fontSize(8).fillColor(MUTED).text(pdfText(label), x, y + boxH + 4, { width: boxW, align: 'center' });
+      });
+      doc.y = y + boxH + 18;
+    }
+
     heading('Customer details');
     rows([['Name', rec.name], ['Email', rec.email], ['Phone', rec.phone || '-'], ['Postcode', rec.postcode], ['Showroom', rec.showroom]]);
 

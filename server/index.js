@@ -204,7 +204,7 @@ export async function handle(req, res) {
 
   const rec = { id: 'ENQ-' + crypto.randomBytes(4).toString('hex').toUpperCase(), receivedAt: new Date().toISOString(), ip, mailed: false, ...value };
   try { store(rec); } catch (e) { console.error('store failed', e); return send(res, 500, { error: 'Could not save your enquiry' }); }
-  const prep = await prepare(rec, { outside: imageBuffer(body.images && body.images.outside), inside: imageBuffer(body.images && body.images.inside) });
+  const prep = await prepare(rec, { outside: imageBuffer(body.images && body.images.outside), inside: imageBuffer(body.images && body.images.inside), model: imageBuffer(body.images && body.images.model), variant: imageBuffer(body.images && body.images.variant) });
   try {
     await sendMail(rec, prep);
     store({ id: rec.id, mailed: true, update: true });
