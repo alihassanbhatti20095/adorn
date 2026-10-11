@@ -1,5 +1,5 @@
 // @ts-nocheck
-import React, { useEffect, useRef, useState } from 'react';
+import React, { Suspense, lazy, useEffect, useRef, useState } from 'react';
 import { STEPS, homog, mat3d, clamp } from './lib/core';
 import { D } from './data';
 import { useStore, door } from './store';
@@ -7,6 +7,7 @@ import { Ic, goldBtn, G, TX } from './ui';
 
 /** Optional real renders: public/renders/{model}/{variant}/{view}.png layered over the SVG placeholder. */
 const USE_REAL_RENDERS = false;
+const House3D = lazy(() => import('./House3D'));
 
 function DoorArt({ cfg, view }) {
   const main = door(cfg, view).el;
@@ -73,11 +74,11 @@ export default function Stage({ L }) {
   const { cfg, view, zoom, pan, night, doorOpen, step, panelOpen, rendering, house, cookie, isMobile, isLand, isShort, patch, go, stageW, stageH } = useStore();
   const stageRef = useRef(null), ptrs = useRef(new Map()), gest = useRef({}), lastTap = useRef(0);
   const [gesturing, setGesturing] = useState(false);
-  const T = D.typeById[cfg.type], canOpen = !(T.l || T.r || T.o);
+  const T = D.typeById[cfg.type], view3d = step === 'view3d', canOpen = view3d || !(T.l || T.r || T.o);
 
   // Touch: pinch to zoom, drag to pan when zoomed, swipe sideways to flip outside/inside, double-tap to zoom. Wheel zooms on desktop.
   const gDown = (e) => {
-    if (step === 'house' || e.target.closest('button, a, input, select, textarea, [role=dialog]')) return;
+    if (step === 'house' || step === 'view3d' || e.target.closest('button, a, input, select, textarea, [role=dialog]')) return;
     ptrs.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
     const g = gest.current, n = ptrs.current.size;
     if (n === 1) Object.assign(g, { x0: e.clientX, y0: e.clientY, t0: Date.now(), moved: 0, pan0: pan, d0: 0 });
@@ -111,7 +112,7 @@ export default function Stage({ L }) {
     }
     if (useStore.getState().zoom <= 1.05 && (pan.x || pan.y)) patch({ pan: { x: 0, y: 0 } });
   };
-  const gWheel = (e) => { if (step === 'house') return; const nz = clamp(+(zoom - e.deltaY * 0.0015).toFixed(2), 0.6, 3); patch(nz <= 1.05 ? { zoom: nz, pan: { x: 0, y: 0 } } : { zoom: nz }); };
+  const gWheel = (e) => { if (step === 'house' || step === 'view3d') return; const nz = clamp(+(zoom - e.deltaY * 0.0015).toFixed(2), 0.6, 3); patch(nz <= 1.05 ? { zoom: nz, pan: { x: 0, y: 0 } } : { zoom: nz }); };
 
   // Door swing preview: hinge side comes from the opening direction, mirrored when looking from inside.
   const inside = view === 'inside', hingeRight = (cfg.opening[0] === 'R') !== inside, towardViewer = (cfg.opening.endsWith('out')) !== inside;
@@ -139,12 +140,12 @@ export default function Stage({ L }) {
 
   return (
     <main ref={stageRef} aria-label="Door preview" onPointerDown={gDown} onPointerMove={gMove} onPointerUp={gUp} onPointerCancel={gUp} onWheel={gWheel}
-      style={{ flex: 1, order: L.stageOrder, position: 'relative', overflow: 'hidden', minWidth: 0, minHeight: 0, background: '#EDEDEC', touchAction: step === 'house' ? undefined : 'none' }}>
+      style={{ flex: 1, order: L.stageOrder, position: 'relative', overflow: 'hidden', minWidth: 0, minHeight: 0, background: '#EDEDEC', touchAction: step === 'house' || step === 'view3d' ? undefined : 'none' }}>
       <div aria-hidden="true" style={{ position: 'absolute', inset: 0, background: 'repeating-linear-gradient(0deg, rgba(70,58,44,.10) 0 3px, transparent 3px 72px), repeating-linear-gradient(90deg, rgba(70,58,44,.06) 0 3px, transparent 3px 230px), linear-gradient(180deg, #DCD6CC 0%, #C9C1B4 100%)' }} />
       <div aria-hidden="true" style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: isMobile ? (isShort ? 'max(12%, 56px)' : 'max(16%, 64px)') : '16%', borderTop: '8px solid #B3AB9F', background: 'repeating-linear-gradient(90deg, rgba(0,0,0,.10) 0 2px, transparent 2px 150px), repeating-linear-gradient(0deg, rgba(0,0,0,.08) 0 2px, transparent 2px 50px), linear-gradient(180deg, #9F978C, #82796F)' }} />
 
-      <div aria-hidden="true" style={{ position: 'absolute', inset: 0, pointerEvents: 'none', opacity: night && !houseMode ? 1 : 0, transition: 'opacity .6s ease', background: 'linear-gradient(180deg, rgba(8,14,34,.78), rgba(18,20,34,.6))' }} />
-      {!houseMode && (
+      <div aria-hidden="true" style={{ position: 'absolute', inset: 0, pointerEvents: 'none', opacity: night && !houseMode && !view3d ? 1 : 0, transition: 'opacity .6s ease', background: 'linear-gradient(180deg, rgba(8,14,34,.78), rgba(18,20,34,.6))' }} />
+      {!houseMode && !view3d && (
         <div style={{ position: 'absolute', left: isMobile ? 12 : 24, right: isMobile ? 12 : 24, top: isMobile ? 56 : 76, bottom: isMobile ? (isShort ? 'max(12%, 56px)' : 'max(16%, 64px)') : '16%', display: 'flex', justifyContent: 'center', alignItems: 'flex-end', pointerEvents: 'none' }}>
           <div style={{ position: 'relative', height: '100%', display: 'flex', alignItems: 'flex-end', transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`, transformOrigin: '50% 100%', transition: gesturing ? 'none' : 'transform .25s ease', perspective: 1600, filter: night ? 'drop-shadow(0 0 26px rgba(255,196,110,.38))' : undefined }}>
             {doorOpen && canOpen && <div aria-hidden="true" style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 50% 60%, #FFD9A0 0%, #8A6A44 45%, #2A2118 100%)' }} />}
@@ -159,7 +160,15 @@ export default function Stage({ L }) {
       {houseMode && !house && <DropZone />}
       {houseMode && house && <HouseEditor />}
 
-      {!houseMode && (
+      {view3d && <Suspense fallback={<div role="status" style={{ position: 'absolute', inset: 0, zIndex: 3, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#EDEDEC', color: '#5F6265' }}>Loading 3D view…</div>}><House3D /></Suspense>}
+      {view3d && (
+        <div role="group" aria-label="Camera angle" className="adorn-rail" style={{ position: 'absolute', top: isMobile ? 8 : 16, left: isMobile ? 8 : 16, right: isMobile ? 64 : 'auto', zIndex: 6, display: 'flex', gap: 4, padding: 4, background: '#fff', borderRadius: 999, border: '1px solid #E4E5E6', overflowX: 'auto' }}>
+          {[['front', 'Front'], ['door', 'Door'], ['left', 'Left'], ['right', 'Right']].map(([id, label]) => (
+            <button key={id} onClick={() => useStore.getState().h3 && useStore.getState().h3.view(id)} className="hv-tint" style={{ flex: 'none', height: isMobile ? 40 : 36, padding: '0 14px', border: 0, borderRadius: 999, background: 'transparent', color: TX, font: 'inherit', fontSize: isMobile ? 13 : 14, fontWeight: 500, cursor: 'pointer' }}>{label}</button>
+          ))}
+        </div>
+      )}
+      {!houseMode && !view3d && (
         <div role="group" aria-label="View" style={{ position: 'absolute', top: isMobile ? 8 : 16, left: isMobile ? 8 : 16, zIndex: 6, display: 'flex', gap: 4, padding: 4, background: '#fff', borderRadius: 999, border: '1px solid #E4E5E6' }}>
           {['outside', 'inside'].map((id) => (
             <button key={id} aria-pressed={view === id} onClick={() => patch({ view: id })}
@@ -172,7 +181,7 @@ export default function Stage({ L }) {
         <button onClick={() => patch({ panelOpen: true })} className="hv-bggold" style={{ ...goldBtn, position: 'absolute', top: 72, left: 16, zIndex: 6, fontSize: 14 }}><Ic n="menu" s={18} sw={2} />Menu</button>
       )}
 
-      {!houseMode && (
+      {!houseMode && !view3d && (
         <div style={isMobile ? { position: 'absolute', left: 8, bottom: 8, zIndex: 6, display: 'flex', gap: 6 } : { position: 'absolute', top: 16, right: 16, zIndex: 6, display: 'flex', flexDirection: 'column', gap: 6 }}>
           <button onClick={() => patch({ zoom: Math.min(3, +(zoom + 0.25).toFixed(2)) })} aria-label="Zoom in" className="hv-tint" style={iconBtn}><Ic n="zoomIn" /></button>
           <button onClick={() => patch(zoom - 0.25 <= 1.05 ? { zoom: Math.max(0.6, +(zoom - 0.25).toFixed(2)), pan: { x: 0, y: 0 } } : { zoom: +(zoom - 0.25).toFixed(2) })} aria-label="Zoom out" className="hv-tint" style={iconBtn}><Ic n="zoomOut" /></button>
@@ -184,7 +193,7 @@ export default function Stage({ L }) {
         <div role="group" aria-label="Preview effects" style={isMobile ? { position: 'absolute', top: 8, right: 8, zIndex: 6, display: 'flex', flexDirection: 'column', gap: 6 } : { position: 'absolute', top: 16, right: 76, zIndex: 6, display: 'flex', gap: 6 }}>
           <button onClick={() => patch({ night: !night })} aria-pressed={night} aria-label={night ? 'Switch to daylight' : 'Switch to night'} title={night ? 'Daylight' : 'Night'} className="hv-tint" style={fx(night)}><Ic n={night ? 'sun' : 'moon'} /></button>
           <button onClick={() => canOpen && patch({ doorOpen: !doorOpen })} disabled={!canOpen} aria-pressed={doorOpen} aria-label={doorOpen ? 'Close the door' : 'Open the door'} title={canOpen ? (doorOpen ? 'Close the door' : 'Open the door') : 'Door swing is available for single doors'} className="hv-tint" style={{ ...fx(doorOpen), opacity: canOpen ? 1 : 0.4, cursor: canOpen ? 'pointer' : 'not-allowed' }}><Ic n="doorOpen" /></button>
-          <button onClick={() => patch({ arOpen: true })} aria-label="See it in your space with the camera" title="See it in your space" className="hv-tint" style={fx(false)}><Ic n="camera" /></button>
+          {!view3d && <button onClick={() => patch({ arOpen: true })} aria-label="See it in your space with the camera" title="See it in your space" className="hv-tint" style={fx(false)}><Ic n="camera" /></button>}
         </div>
       )}
 

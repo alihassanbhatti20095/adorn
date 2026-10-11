@@ -10,10 +10,11 @@ import { ARView, StyleFinder } from './Extras';
 import { Reset, Search, TypeStep, ModelStep, Variants, Systems } from './steps/Selection';
 import { Construction, Colours, Glass, Handles, Accessories, Locks } from './steps/Options';
 import { House, PrintPanel, PrintActions, Save } from './steps/Tools';
+import { View3D } from './steps/View3D';
 
 const BODY = {
   reset: Reset, search: Search, guide: StyleFinder, type: TypeStep, model: ModelStep, variants: Variants, systems: Systems, construction: Construction,
-  colours: Colours, glass: Glass, handles: Handles, accessories: Accessories, locks: Locks, house: House, print: PrintPanel, save: Save,
+  colours: Colours, glass: Glass, handles: Handles, accessories: Accessories, locks: Locks, house: House, view3d: View3D, print: PrintPanel, save: Save,
 };
 
 const layout = (mob, tall, land) => (land
@@ -34,7 +35,7 @@ function HiddenFile() {
 export default function App() {
   const { cfg, step, panelOpen, sheetTall, isMobile, isLand, isShort, lang, toast, patch, go, setLang, past, future, undo, redo, visited, arOpen } = useStore();
   const L = layout(isMobile, sheetTall, isLand);
-  if (L.panelH === '__SH__') L.panelH = isShort ? '36dvh' : '42dvh';
+  if (L.panelH === '__SH__') L.panelH = step === 'view3d' ? '36dvh' : isShort ? '36dvh' : '42dvh';
   const railRef = useRef(null), sheetDrag = useRef(null);
   const idx = STEPS.findIndex((s) => s.id === step), cur = STEPS[idx];
   const Body = BODY[step];

@@ -3,7 +3,7 @@ import React from 'react';
 export const G = '#B8925A', GH = '#A68049', GT = '#F2E8D8', TX = '#2B2D2F', DV = '#E4E5E6', ERR = '#C0392B';
 export const h = React.createElement;
 export const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
-export const STEPS = [['reset', 'Reset to default', 'reset'], ['search', 'Search', 'search'], ['guide', 'Style finder', 'sparkle'], ['type', 'Type', 'type'], ['model', 'Door model', 'door'], ['variants', 'Model variants', 'layers'], ['systems', 'Systems', 'frame'], ['construction', 'Construction', 'ruler'], ['colours', 'Colours', 'palette'], ['glass', 'Glass', 'glass'], ['handles', 'Door handles and parts', 'handle'], ['accessories', 'Accessories', 'bell'], ['locks', 'Locks', 'lock'], ['house', 'Insert door into the house', 'house'], ['print', 'Print / Enquiry', 'printer'], ['save', 'Save / load', 'save']].map(([id, label, icon]) => ({ id, label, icon }));
+export const STEPS = [['reset', 'Reset to default', 'reset'], ['search', 'Search', 'search'], ['guide', 'Style finder', 'sparkle'], ['type', 'Type', 'type'], ['model', 'Door model', 'door'], ['variants', 'Model variants', 'layers'], ['systems', 'Systems', 'frame'], ['construction', 'Construction', 'ruler'], ['colours', 'Colours', 'palette'], ['glass', 'Glass', 'glass'], ['handles', 'Door handles and parts', 'handle'], ['accessories', 'Accessories', 'bell'], ['locks', 'Locks', 'lock'], ['house', 'Insert door into the house', 'house'], ['view3d', '3D house view', 'cube'], ['print', 'Print / Enquiry', 'printer'], ['save', 'Save / load', 'save']].map(([id, label, icon]) => ({ id, label, icon }));
 export const LANGS = [['en', 'English'], ['hr', 'Hrvatski'], ['de', 'Deutsch'], ['sl', 'Slovenščina'], ['fr', 'Français'], ['it', 'Italiano'], ['hu', 'Magyar']].map(([id, label]) => ({ id, label }));
 export const PANELS = { '1side': '1-side facing on the outside', '2side': '2-sided overlay panel inside and outside' };
 export const OPEN = { 'R-in': 'Right - inside', 'R-out': 'Right - outside', 'L-in': 'Left - inside', 'L-out': 'Left - outside' };
@@ -37,6 +37,7 @@ export const ICONS = {
   download: [['p', 'M12 15V3'], ['p', 'm7 10 5 5 5-5'], ['p', 'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4']],
   copy: [['r', 8, 8, 14, 14, 2], ['p', 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2']],
   image: [['r', 3, 3, 18, 18, 2], ['c', 9, 9, 2], ['p', 'm21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21']],
+  cube: [['p', 'M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z'], ['p', 'm3.3 7 8.7 5 8.7-5'], ['p', 'M12 22V12']],
   undo: [['p', 'M3 7v6h6'], ['p', 'M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13']],
   redo: [['p', 'M21 7v6h-6'], ['p', 'M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13']],
   share: [['c', 18, 5, 3], ['c', 6, 12, 3], ['c', 18, 19, 3], ['p', 'm8.59 13.51 6.83 3.98'], ['p', 'm15.41 6.51-6.82 3.98']],
