@@ -139,48 +139,21 @@ function surround(B, x, ow, oh) {
   for (const s of [-1, 1]) B.box(0.07, 0.32, 0.4, 'trim', x + s * (ow / 2 + 0.3), oh + 0.22, 0.2);
 }
 
-/* ------------------------------------------------------------------ one terrace house (not the hero's door) */
+/* ------------------------------------------------------------------ the house facade (the door itself is added in buildHero) */
 function house(B, M, o) {
-  const { x, key, simple } = o, wallKey = key, i = o.i;
-  B.push(x, 0, 0);
-  if (!o.hero) {
-    B.box(WH, H + 0.05, T, wallKey, 0, H / 2 - 0.025, -T / 2, { metric: true });
-    B.box(WH, H, DH - T, wallKey, 0, H / 2, -(DH + T) / 2, { metric: true });
-  }
+  const { ow } = o, lit = (a) => hash(5, a) > 0.42;
   // string course between floors and a stone plinth
   B.box(WH, 0.16, 0.08, 'stoneTrim', 0, 2.78, 0.04); B.box(WH, 0.45, 0.07, 'stoneTrim', 0, 0.2, 0.035);
-  const lit = (a) => hash(i + 10, a) > 0.42;
-  const odd = i % 2 !== 0;
-  if (o.hero) {
-    const ow = o.ow;
-    const bx = -(ow / 2 + 0.5 + 1.0);
-    bayAt(B, Math.max(bx, -2.9), lit(1));
-    sash(B, ow / 2 + 1.25, 1.7, 1.15, 1.7, lit(2));
-  } else if (odd) { bayAt(B, -2.6, lit(1)); sash(B, 2.45, 1.7, 1.15, 1.7, lit(2)); }
-  else { sash(B, -2.5, 1.7, 1.15, 1.7, lit(1)); bayAt(B, 2.6, lit(2)); }
+  bayAt(B, Math.max(-(ow / 2 + 0.5 + 1.0), -2.9), lit(1));
+  sash(B, ow / 2 + 1.25, 1.7, 1.15, 1.7, lit(2));
   for (const [k, sx] of [[3, -2.7], [4, 0], [5, 2.7]]) sash(B, sx, 4.1, 1.1, 1.75, lit(k));
-  if (!o.hero) {
-    const ow = 1.0, oh = 2.15;
-    if (o.paint) B.plane(ow, oh, o.paint, 0, oh / 2, 0.02);
-    surround(B, 0, ow, oh);
-    B.box(ow + 0.5, 0.06, 0.45, 'stoneTrim', 0, 0.02, 0.22);
-  }
-  // gutter and downpipes at the party walls
+  // side windows so the house reads as a real detached house when you orbit
+  for (const sx of [-1, 1]) for (const z of [-2.6, -5.4]) for (const y of [1.7, 4.1]) { B.push(sx * WH / 2, 0, z, sx * Math.PI / 2); sash(B, 0, y, 1.0, 1.7, lit(Math.abs(z) * 3 + y)); B.pop(); }
+  // gutter and downpipes at the corners
   B.box(WH + 0.1, 0.09, 0.1, 'iron', 0, H - 0.03, 0.06);
-  for (const s of [-1, 1]) B.box(0.06, H - 0.2, 0.06, 'iron', s * (WH / 2 - 0.12), (H - 0.2) / 2, 0.09);
-  // front garden wall, pillars, gate
-  const zw = 6.0, wk = odd ? 'brickStock' : 'brickRed';
-  for (const s of [-1, 1]) {
-    B.box(3.3, 0.62, 0.22, wk, s * 2.55, 0.31, zw, { metric: true }); B.box(3.4, 0.07, 0.3, 'stoneTrim', s * 2.55, 0.655, zw);
-    B.box(0.32, 1.0, 0.32, wk, s * 0.88, 0.5, zw, { metric: true }); B.box(0.44, 0.08, 0.44, 'stoneTrim', s * 0.88, 1.04, zw);
-  }
-  if (!o.hero) {
-    for (let k = -6; k <= 6; k++) B.box(0.022, 0.86, 0.022, 'iron', k * 0.105, 0.5, zw);
-    B.box(1.3, 0.025, 0.03, 'iron', 0, 0.2, zw); B.box(1.3, 0.025, 0.03, 'iron', 0, 0.85, zw);
-  }
-  // tiled path
-  B.box(o.hero ? 1.3 : 1.1, 0.03, zw - 0.3, 'tile', 0, 0.005, (zw + 0.3) / 2 + 0.0, { metric: true });
-  B.pop();
+  for (const s of [-1, 1]) B.box(0.06, H - 0.2, 0.06, 'iron', s * (WH / 2 - 0.1), (H - 0.2) / 2, 0.09);
+  // tiled path from the door to the pavement, no boundary wall
+  B.box(1.3, 0.03, 5.9, 'tile', 0, 0.005, 3.2, { metric: true });
 }
 
 /* ------------------------------------------------------------------ roof across a run of houses */
@@ -274,33 +247,14 @@ export function buildWorld(scene, M) {
   B.box(130, 0.004, 0.09, 'yellow', 0, -0.118, 9.42); B.box(130, 0.004, 0.09, 'yellow', 0, -0.118, 9.56);
   for (let x = -60; x < 60; x += 4) B.box(2, 0.004, 0.11, 'trim', x, -0.118, 13.7);
 
-  /* terrace: hero at i=0 is added separately; neighbours here */
-  const xs = [-2, -1, 1, 2];
-  xs.forEach((k, n) => house(B, M, { x: k * WH, key: Math.abs(k) === 1 ? 'brickStock' : 'brickRed', i: k + 5, hero: false }));
-  // neighbour doors get a painted panel texture (one small mesh each)
-  const doorCols = ['#1f4d3a', '#2a3f66', '#7a1f2b', '#2b2b2e'];
-  xs.forEach((k, n) => {
-    const p = new THREE.Mesh(new THREE.PlaneGeometry(1.0, 2.15), new THREE.MeshStandardMaterial({ map: TX.neighbourDoor(doorCols[n], 20 + 2 * (n + (k > 0 ? 3 : 0))), roughness: 0.4 }));
-    p.position.set(k * WH, 1.075, 0.02); p.receiveShadow = true; world.add(p); p.userData.own = true;
-  });
-
-  /* opposite row (faces the camera across the road) */
-  const opp = new THREE.Group(); opp.position.set(0, 0, 27); opp.rotation.y = Math.PI; world.add(opp);
-  const OB = new Batch(M);
-  [-2, -1, 0, 1, 2].forEach((k) => house(OB, M, { x: k * WH, key: k % 2 ? 'brickStock' : 'brickRed', i: k + 40, hero: false, paint: ['doorA', 'doorB', 'doorC'][(k + 2) % 3] }));
-  OB.box(WH * 5, H + 0.05, T, 'brickRed', 0, H / 2, -T / 2); // visible rear faces never matter, but keeps the wall solid
-  OB.finish(opp, { shadow: false });
-  buildRoof(opp, M, -2.5 * WH, 2.5 * WH, 'roof_slate');
-  buildStacks(opp, M, [-2 * WH + WH / 2, -WH / 2, WH / 2, 2 * WH - WH / 2, 2.5 * WH - 0.5]);
-
   /* street furniture */
-  for (const x of [-WH / 2, WH / 2, -WH * 1.5, WH * 1.5]) lamp(B, x, 7.7);
+  for (const x of [-WH / 2 - 0.5, WH / 2 + 0.5]) lamp(B, x, 7.7);
   pillarBox(B, -11.4, 8.0);
   bin(B, 'binGreen', 5.6, 4.9, 0.2); bin(B, 'binBlack', 6.3, 5.0, -0.1); bin(B, 'binBlue', -WH * 1.0 - 3.6, 5.1, 0.1);
 
   /* greenery */
   const shrub = (x, z, s, n) => { for (let i = 0; i < n; i++) blob(x + (hash(i, x) - 0.5) * 0.9 * s, 0.45 * s + hash(i, z) * 0.3, z + (hash(i, z + 9) - 0.5) * 0.5 * s, 0.4 * s + hash(i, 7) * 0.2, leafCol(i + x)); };
-  for (const k of [-2, -1, 0, 1, 2]) { shrub(k * WH - 3.0, 5.35, 1, 6); shrub(k * WH + 3.0, 5.35, 1, 6); }
+  for (const sx of [-1, 1]) { shrub(sx * (WH / 2 + 0.9), 1.2, 1.1, 7); shrub(sx * (WH / 2 + 2.4), 2.4, 0.9, 5); }
   const tree = (x, z, s, kind) => {
     B.cyl(0.14 * s, 0.22 * s, 3.2 * s, 10, 'bark', x, 1.6 * s, z);
     const n = 16, tint = kind === 'blossom' ? 1 : 0;
@@ -324,7 +278,7 @@ export function buildWorld(scene, M) {
   foliage.forEach((f, i) => { mtx.compose(new THREE.Vector3(f.x, f.y, f.z), new THREE.Quaternion(), new THREE.Vector3(f.r, f.r * 0.85, f.r)); fm.setMatrixAt(i, mtx); fm.setColorAt(i, f.c); });
   fm.castShadow = true; fm.receiveShadow = true; world.add(fm);
 
-  return { world, lampPositions: [[-WH / 2, 7.7], [WH / 2, 7.7]] };
+  return { world };
 }
 
 /* ------------------------------------------------------------------ hero house: depends on the configured door */

@@ -10,7 +10,8 @@ export const ROOFS = { slate: ['Slate', '#3A3F46'], terracotta: ['Terracotta', '
 const chip = (on) => ({ position: 'relative', minHeight: 64, display: 'flex', alignItems: 'center', gap: 10, padding: 8, border: `1px solid ${on ? G : DV}`, borderRadius: 8, background: '#fff', color: TX, font: 'inherit', fontSize: 14, textAlign: 'left', cursor: 'pointer' });
 
 export function View3D() {
-  const { scene3d, patch, night, doorOpen, h3, showToast } = useStore();
+  const { cfg, setCfg, scene3d, patch, night, doorOpen, h3, showToast } = useStore();
+  const [hinge, dir] = cfg.opening.split('-');
   const set = (p) => patch({ scene3d: { ...scene3d, ...p } });
   const save = async () => {
     if (!h3) return;
@@ -24,12 +25,24 @@ export function View3D() {
   };
   return (
     <div style={{ padding: 'var(--pp)', display: 'flex', flexDirection: 'column', gap: 18 }}>
-      <p style={{ margin: 0, lineHeight: 1.5 }}>Your door on a British street. Drag to look around, pinch or scroll to zoom. Press Open door and a resident walks up the path to let themselves in.</p>
+      <p style={{ margin: 0, lineHeight: 1.5 }}>Your door on a British home. Drag to look around, pinch or scroll to zoom, tap the door to open it.</p>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
         <button onClick={() => patch({ doorOpen: !doorOpen })} aria-pressed={doorOpen} className="hv-tint" style={{ ...greyBtn, height: 48, justifyContent: 'center', background: doorOpen ? '#F2E8D8' : '#E9EAEB' }}><Ic n="doorOpen" s={20} />{doorOpen ? 'Close door' : 'Open door'}</button>
         <button onClick={() => patch({ night: !night })} aria-pressed={night} className="hv-tint" style={{ ...greyBtn, height: 48, justifyContent: 'center', background: night ? '#F2E8D8' : '#E9EAEB' }}><Ic n={night ? 'sun' : 'moon'} s={20} />{night ? 'Daytime' : 'Night time'}</button>
       </div>
-      <button onClick={() => set({ person: !scene3d.person })} aria-pressed={scene3d.person} className="hv-tint" style={{ ...greyBtn, height: 48, justifyContent: 'center', background: scene3d.person ? '#F2E8D8' : '#E9EAEB' }}>{scene3d.person ? 'Person opens the door: on' : 'Person opens the door: off'}</button>
+      <div>
+        <h2 style={{ ...H2, marginBottom: 10 }}>Opening direction</h2>
+        <div role="radiogroup" aria-label="Door swing" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+          {[['in', 'Opens inward'], ['out', 'Opens outward']].map(([id, label]) => (
+            <button key={id} role="radio" aria-checked={dir === id} onClick={() => { setCfg({ opening: `${hinge}-${id}` }); patch({ doorOpen: true }); }} className="hv-gold" style={{ ...chip(dir === id), justifyContent: 'center', minHeight: 52, fontWeight: dir === id ? 500 : 400 }}>{label}{dir === id && <Badge size={20} top={4} right={4} icon={12} />}</button>
+          ))}
+        </div>
+        <div role="radiogroup" aria-label="Hinge side" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 10 }}>
+          {[['L', 'Hinges on left'], ['R', 'Hinges on right']].map(([id, label]) => (
+            <button key={id} role="radio" aria-checked={hinge === id} onClick={() => { setCfg({ opening: `${id}-${dir}` }); patch({ doorOpen: true }); }} className="hv-gold" style={{ ...chip(hinge === id), justifyContent: 'center', minHeight: 52, fontWeight: hinge === id ? 500 : 400 }}>{label}{hinge === id && <Badge size={20} top={4} right={4} icon={12} />}</button>
+          ))}
+        </div>
+      </div>
       <div>
         <h2 style={{ ...H2, marginBottom: 10 }}>Walls</h2>
         <div role="radiogroup" aria-label="Wall finish" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>

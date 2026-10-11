@@ -10,7 +10,6 @@ import { D } from './data';
 import { useStore, door } from './store';
 import { doorParts } from './lib/render';
 import { makeMaterials, buildWorld, buildHero, buildRoof, buildStacks, WALL_KEY, WH } from './scene3d/street';
-import { createPerson } from './scene3d/person';
 import * as TX from './scene3d/tex';
 
 const OPEN_ANGLE = 1.25; // radians, about 70 degrees: reads as clearly open from the front without going edge-on
@@ -36,7 +35,7 @@ export default function House3D() {
     host.appendChild(renderer.domElement);
 
     const scene = new THREE.Scene();
-    scene.fog = new THREE.Fog('#c9d8e6', 45, 230);
+    scene.fog = new THREE.Fog('#c9d8e6', 22, 150);
     const camera = new THREE.PerspectiveCamera(40, 1, 0.2, 1000);
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true; controls.dampingFactor = 0.08; controls.enablePan = false;
@@ -59,7 +58,7 @@ export default function House3D() {
     sun.target.position.set(0, 0, 3); scene.add(sun, sun.target);
     const warm = (d) => { const l = new THREE.PointLight('#ffc878', 0, d, 2); scene.add(l); return l; };
     const lampL = warm(16), lampR = warm(16), lantern = warm(7), inner = warm(12);
-    lampL.position.set(-WH / 2, 4.0, 7.2); lampR.position.set(WH / 2, 4.0, 7.2);
+    lampL.position.set(-WH / 2 - 0.5, 4.0, 7.2); lampR.position.set(WH / 2 + 0.5, 4.0, 7.2);
 
     /* stars, moon, clouds, halos */
     const r = rng(3), sp = [];
@@ -75,23 +74,22 @@ export default function House3D() {
     }
     const glowTex = TX.glow(), halos = [];
     const halo = (x, y, z, size) => { const m = new THREE.SpriteMaterial({ map: glowTex, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, fog: false }); const s = new THREE.Sprite(m); s.position.set(x, y, z); s.scale.set(size, size, 1); scene.add(s); halos.push(m); return s; };
-    for (const x of [-WH / 2, WH / 2, -WH * 1.5, WH * 1.5]) halo(x, 4.06, 7.7, 3.2);
+    for (const x of [-WH / 2 - 0.5, WH / 2 + 0.5]) halo(x, 4.06, 7.7, 3.2);
 
     /* world + materials */
     const M = makeMaterials();
     const { world } = buildWorld(scene, M);
     const roofGroup = new THREE.Group(); scene.add(roofGroup);
-    const person = createPerson(); scene.add(person.group); person.group.traverse((o) => { if (o.isMesh) o.castShadow = true; });
 
     let hero = null, heroInfo = null, token = 0, openTarget = 0, dirty = true, camTween = null, lanternHalo = null;
     const env = { t: 0, target: 0 };
-    const state = { want: false, open: false, wall: 'brick', roof: 'slate', person: true };
+    const state = { want: false, open: false, wall: 'brick', roof: 'slate' };
     const disposeGroup = (g) => g.traverse((o) => { if (o.geometry) o.geometry.dispose(); [].concat(o.material || []).forEach((m) => { if (m.userData && m.userData.own) { if (m.map) m.map.dispose(); m.dispose(); } }); });
 
     function buildRoofs() {
       while (roofGroup.children.length) { const c = roofGroup.children[0]; roofGroup.remove(c); disposeGroup(c); }
-      buildRoof(roofGroup, M, -2.5 * WH, 2.5 * WH, `roof_${state.roof}`);
-      buildStacks(roofGroup, M, [-2 * WH + WH / 2, -WH / 2, WH / 2, 2 * WH - WH / 2, 2.5 * WH - 0.5, -2.5 * WH + 0.5]);
+      buildRoof(roofGroup, M, -WH / 2, WH / 2, `roof_${state.roof}`);
+      buildStacks(roofGroup, M, [-WH / 2 + 0.9, WH / 2 - 0.9]);
       dirty = true;
     }
 
@@ -112,9 +110,6 @@ export default function House3D() {
       lantern.position.copy(heroInfo.lanternPos);
       if (lanternHalo) { scene.remove(lanternHalo); }
       lanternHalo = halo(heroInfo.lanternPos.x, heroInfo.lanternPos.y, 0.3, 1.6);
-      // where the person stands: in front of the handle (outward doors: just beside it so the leaf swings clear)
-      const hx = heroInfo.handleX, spotX = parts.outward ? hx + (parts.hingeRight ? -0.55 : 0.55) : hx;
-      person.setTask({ spot: [spotX, 0.75], handleX: hx, start: [0.1, 8.1] });
       applyEnv(); dirty = true;
     }
 
@@ -143,9 +138,10 @@ export default function House3D() {
 
     /* ----- camera presets ----- */
     const aspect = () => host.clientWidth / Math.max(1, host.clientHeight);
+    // The door is the subject: the default view is a close three-quarter shot of it; Front pulls back to the whole house.
     const VIEWS = {
       front: () => [[0, 3.4, Math.max(21, 19 / aspect())], [0, 3.1, 0]],
-      door: () => [[aspect() < 0.9 ? 1.4 : 1.9, 1.55, aspect() < 0.9 ? 6.4 : 4.9], [0, 1.25, 0]],
+      door: () => [[aspect() < 0.9 ? 2.6 : 3.4, 1.7, aspect() < 0.9 ? 8.2 : 6.6], [0, 1.35, 0]],
       left: () => [[-12.5, 3.0, 13], [0, 2.3, 0]],
       right: () => [[12.5, 3.0, 13], [0, 2.3, 0]],
     };
@@ -159,14 +155,12 @@ export default function House3D() {
     const ro = new ResizeObserver(resize); ro.observe(host); resize();
     controls.addEventListener('change', () => { dirty = true; });
 
-    const hooks = { open: () => { state.open = true; openTarget = heroInfo.pivot.userData.dir * OPEN_ANGLE; applyEnv(); }, close: () => { state.open = false; openTarget = 0; applyEnv(); } };
     let raf, last = performance.now();
     const tick = (now) => {
       raf = requestAnimationFrame(tick);
       const dt = Math.min(0.25, (now - last) / 1000); last = now;
       if (Math.abs(env.t - env.target) > 0.002) { env.t += Math.sign(env.target - env.t) * Math.min(Math.abs(env.target - env.t), dt / 1.6); applyEnv(); }
       if (heroInfo) {
-        if (state.person) { if (person.update(Math.min(dt, 0.1), state.want, hooks)) dirty = true; }
         const d = openTarget - heroInfo.pivot.rotation.y;
         if (Math.abs(d) > 0.002) { heroInfo.pivot.rotation.y += d * Math.min(1, dt * 3.2); dirty = true; }
       }
@@ -191,30 +185,29 @@ export default function House3D() {
     api.current = {
       rebuild: (c) => rebuild(c),
       setStyle: (s) => {
-        const wallChanged = s.wall !== state.wall, roofChanged = s.roof !== state.roof, personChanged = s.person !== state.person;
-        Object.assign(state, { wall: s.wall, roof: s.roof, person: s.person });
+        const wallChanged = s.wall !== state.wall, roofChanged = s.roof !== state.roof;
+        Object.assign(state, { wall: s.wall, roof: s.roof });
         if (roofChanged) buildRoofs();
-        if (personChanged) { person.group.visible = s.person; if (!s.person) { person.reset(); if (heroInfo) { state.open = state.want; openTarget = state.want ? heroInfo.pivot.userData.dir * OPEN_ANGLE : 0; } } dirty = true; }
         return { wallChanged };
       },
-      setOpen: (o) => { state.want = o; if (!state.person && heroInfo) { state.open = o; openTarget = o ? heroInfo.pivot.userData.dir * OPEN_ANGLE : 0; applyEnv(); } },
+      setOpen: (o) => { state.want = o; state.open = o; if (heroInfo) { openTarget = o ? heroInfo.pivot.userData.dir * OPEN_ANGLE : 0; applyEnv(); } },
       setNight: (n) => { env.target = n ? 1 : 0; },
       view,
       snapshot: () => { renderer.render(scene, camera); return renderer.domElement.toDataURL('image/jpeg', 0.92); },
     };
     patch({ h3: api.current });
     const c0 = useStore.getState();
-    Object.assign(state, { want: c0.doorOpen, wall: c0.scene3d.wall, roof: c0.scene3d.roof, person: c0.scene3d.person });
-    person.group.visible = state.person; env.t = env.target = c0.night ? 1 : 0;
-    buildRoofs(); applyEnv(); view('front', true); view('front', false, [-13, 2.8, 20]);
-    rebuild(c0.cfg).then(() => { if (state.want && !state.person) { state.open = true; openTarget = heroInfo.pivot.userData.dir * OPEN_ANGLE; } });
+    Object.assign(state, { want: c0.doorOpen, open: c0.doorOpen, wall: c0.scene3d.wall, roof: c0.scene3d.roof });
+    env.t = env.target = c0.night ? 1 : 0;
+    buildRoofs(); applyEnv(); view('door', true); view('door', false, [-12, 3.2, 20]);
+    rebuild(c0.cfg);
     raf = requestAnimationFrame(tick);
 
     return () => {
       cancelAnimationFrame(raf); ro.disconnect(); token++;
       renderer.domElement.removeEventListener('pointerdown', onDown); renderer.domElement.removeEventListener('pointerup', onUp);
       controls.dispose();
-      if (hero) disposeGroup(hero); disposeGroup(world); disposeGroup(roofGroup); disposeGroup(person.group);
+      if (hero) disposeGroup(hero); disposeGroup(world); disposeGroup(roofGroup);
       scene.traverse((o) => { if (o.geometry) o.geometry.dispose(); });
       [starGeo, cloudTex, glowTex, envRT.texture].forEach((t) => t && t.dispose && t.dispose()); envRT.dispose(); pmrem.dispose();
       M.dispose(); sky.material.dispose();

@@ -98,7 +98,7 @@ let pt, tt;
 let dragState = null;
 
 export const useStore = create((set, get) => ({
-  cfg: initialCfg(), past: [], future: [], fromShare, night: false, doorOpen: false, arOpen: false, scene3d: { wall: 'brick', roof: 'slate', person: true }, h3: null, visited: {}, pan: { x: 0, y: 0 },
+  cfg: initialCfg(), past: [], future: [], fromShare, night: false, doorOpen: false, arOpen: false, scene3d: { wall: 'brick', roof: 'slate' }, h3: null, visited: {}, pan: { x: 0, y: 0 },
   step: hashStep() || 'model', panelOpen: !(fromShare && viewport().isMobile), sheetTall: false, modelFilter: 'all', view: 'outside', zoom: 1,
   colourTab: 'outside', ralQ: '', searchQ: '', sysOpen: {}, acc: { handles: true, inside: false }, lockOpen: {},
   modal: null, refCode: '', loadInput: '', loadError: '', toast: '',
