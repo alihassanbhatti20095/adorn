@@ -141,9 +141,12 @@ function surround(B, x, ow, oh) {
 
 /* ------------------------------------------------------------------ the house facade (the door itself is added in buildHero) */
 function house(B, M, o) {
-  const { ow } = o, lit = (a) => hash(5, a) > 0.42;
-  // string course between floors and a stone plinth
-  B.box(WH, 0.16, 0.08, 'stoneTrim', 0, 2.78, 0.04); B.box(WH, 0.45, 0.07, 'stoneTrim', 0, 0.2, 0.035);
+  const { ow, oh } = o, lit = (a) => hash(5, a) > 0.42;
+  // String course between floors and a stone plinth. Both stop short of the doorway so an outward-opening leaf swings through clear air.
+  const gap = ow / 2 + 0.3, side = (WH / 2 - gap);
+  const band = (h, d, key, y, z) => { for (const s of [-1, 1]) B.box(side, h, d, key, s * (gap + side / 2), y, z); };
+  band(0.45, 0.07, 'stoneTrim', 0.2, 0.035);
+  if (oh > 2.45) band(0.16, 0.08, 'stoneTrim', 2.78, 0.04); else B.box(WH, 0.16, 0.08, 'stoneTrim', 0, 2.78, 0.04);
   bayAt(B, Math.max(-(ow / 2 + 0.5 + 1.0), -2.9), lit(1));
   sash(B, ow / 2 + 1.25, 1.7, 1.15, 1.7, lit(2));
   for (const [k, sx] of [[3, -2.7], [4, 0], [5, 2.7]]) sash(B, sx, 4.1, 1.1, 1.75, lit(k));
@@ -153,7 +156,7 @@ function house(B, M, o) {
   B.box(WH + 0.1, 0.09, 0.1, 'iron', 0, H - 0.03, 0.06);
   for (const s of [-1, 1]) B.box(0.06, H - 0.2, 0.06, 'iron', s * (WH / 2 - 0.1), (H - 0.2) / 2, 0.09);
   // tiled path from the door to the pavement, no boundary wall
-  B.box(1.3, 0.03, 5.9, 'tile', 0, 0.005, 3.2, { metric: true });
+  B.box(1.3, 0.03, 5.9, 'tile', 0, -0.015, 3.2, { metric: true });
 }
 
 /* ------------------------------------------------------------------ roof across a run of houses */
@@ -254,7 +257,6 @@ export function buildWorld(scene, M) {
 
   /* greenery */
   const shrub = (x, z, s, n) => { for (let i = 0; i < n; i++) blob(x + (hash(i, x) - 0.5) * 0.9 * s, 0.45 * s + hash(i, z) * 0.3, z + (hash(i, z + 9) - 0.5) * 0.5 * s, 0.4 * s + hash(i, 7) * 0.2, leafCol(i + x)); };
-  for (const sx of [-1, 1]) { shrub(sx * (WH / 2 + 0.9), 1.2, 1.1, 7); shrub(sx * (WH / 2 + 2.4), 2.4, 0.9, 5); }
   const tree = (x, z, s, kind) => {
     B.cyl(0.14 * s, 0.22 * s, 3.2 * s, 10, 'bark', x, 1.6 * s, z);
     const n = 16, tint = kind === 'blossom' ? 1 : 0;
@@ -288,8 +290,8 @@ export function buildHero(group, M, d) {
   const B = new Batch(M);
 
   // front slab with the opening cut out
-  const shape = new THREE.Shape(); shape.moveTo(-hw, -0.05); shape.lineTo(hw, -0.05); shape.lineTo(hw, H); shape.lineTo(-hw, H); shape.closePath();
-  const hole = new THREE.Path(); hole.moveTo(-ow / 2, 0); hole.lineTo(-ow / 2, oh); hole.lineTo(ow / 2, oh); hole.lineTo(ow / 2, 0); hole.closePath(); shape.holes.push(hole);
+  const shape = new THREE.Shape();
+  shape.moveTo(-hw, -0.05); shape.lineTo(-ow / 2, -0.05); shape.lineTo(-ow / 2, oh); shape.lineTo(ow / 2, oh); shape.lineTo(ow / 2, -0.05); shape.lineTo(hw, -0.05); shape.lineTo(hw, H); shape.lineTo(-hw, H); shape.closePath();
   const slabGeo = new THREE.ExtrudeGeometry(shape, { depth: T, bevelEnabled: false }); slabGeo.translate(0, 0, -T);
   const slab = new THREE.Mesh(slabGeo, wall); slab.castShadow = slab.receiveShadow = true; group.add(slab);
 
@@ -309,9 +311,9 @@ export function buildHero(group, M, d) {
   const uv = floor.geometry.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * (rw - 0.1), uv.getY(i) * (rd - 0.1));
 
   // facade details shared with the neighbours
-  house(B, M, { x: 0, key: wallKey, i: 5, hero: true, ow });
+  house(B, M, { x: 0, key: wallKey, i: 5, hero: true, ow, oh });
   surround(B, 0, ow, oh);
-  B.box(ow + 0.5, 0.06, 0.5, 'stoneTrim', 0, 0.02, 0.25);
+  B.box(ow, 0.05, T + 0.25, 'stoneTrim', 0, -0.025, -0.05);   // flush doorstep: top is at floor level, so nothing blocks the leaf
 
   B.finish(group);
 
@@ -334,12 +336,5 @@ export function buildHero(group, M, d) {
   const lan = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.06, 0.26, 6), M.lampGlass); lan.position.set(lx, lanternY, 0.12); group.add(lan);
   const lcap = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.09, 6), M.iron); lcap.position.set(lx, lanternY + 0.17, 0.12); group.add(lcap);
 
-  // clipped bay trees in black planters either side of the door
-  for (const s of [-1, 1]) {
-    const x = s * (ow / 2 + 1.15), z = 0.8;
-    const pot = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.15, 0.4, 16), M.plantPot); pot.position.set(x, 0.2, z); pot.castShadow = true; group.add(pot);
-    const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.025, 0.7, 8), M.bark); stem.position.set(x, 0.75, z); group.add(stem);
-    const crown = new THREE.Mesh(new THREE.SphereGeometry(0.3, 18, 14), new THREE.MeshStandardMaterial({ color: '#2f5a2c', roughness: 0.95 })); crown.material.userData.own = true; crown.position.set(x, 1.3, z); crown.castShadow = true; group.add(crown);
-  }
   return { pivot, leaf, rw, rh, rd, lanternPos: new THREE.Vector3(lx, lanternY, 0.7), handleX: cx + (parts.hingeRight ? -lw / 2 + 0.07 : lw / 2 - 0.07), lw };
 }

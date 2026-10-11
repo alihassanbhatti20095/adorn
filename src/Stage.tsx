@@ -162,7 +162,7 @@ export default function Stage({ L }) {
 
       {view3d && <Suspense fallback={<div role="status" style={{ position: 'absolute', inset: 0, zIndex: 3, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#EDEDEC', color: '#5F6265' }}>Loading 3D view…</div>}><House3D /></Suspense>}
       {view3d && (
-        <div role="group" aria-label="Camera angle" className="adorn-rail" style={{ position: 'absolute', top: isMobile ? 8 : 16, left: isMobile ? 8 : 16, right: isMobile ? 64 : 'auto', zIndex: 6, display: 'flex', gap: 4, padding: 4, background: '#fff', borderRadius: 999, border: '1px solid #E4E5E6', overflowX: 'auto' }}>
+        <div role="group" aria-label="Camera angle" className="adorn-rail" style={{ position: 'absolute', top: isMobile ? 8 : 16, left: isMobile ? 8 : 16, right: isMobile ? 64 : 'auto', maxWidth: isMobile ? undefined : 'calc(100% - 200px)', zIndex: 6, display: 'flex', gap: 4, padding: 4, background: '#fff', borderRadius: 999, border: '1px solid #E4E5E6', overflowX: 'auto' }}>
           {[['door', 'Door'], ['front', 'Whole house'], ['left', 'Left'], ['right', 'Right']].map(([id, label]) => (
             <button key={id} onClick={() => useStore.getState().h3 && useStore.getState().h3.view(id)} className="hv-tint" style={{ flex: 'none', height: isMobile ? 40 : 36, padding: '0 14px', border: 0, borderRadius: 999, background: 'transparent', color: TX, font: 'inherit', fontSize: isMobile ? 13 : 14, fontWeight: 500, cursor: 'pointer' }}>{label}</button>
           ))}
